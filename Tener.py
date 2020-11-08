@@ -11,6 +11,8 @@ def oneHotEncode(dim, idx):
     vector = torch.zeros(dim)
     vector[idx] = 1
     return vector    
+def mult_oneHotEncode(dim , idx) :
+    return torch.cat( [ oneHotEncode(dim , i ).view(1,-1) for i in idx ] , dim = 0 )
 
 def word2vec(wordVec , word ,dim):
     try:
@@ -35,7 +37,7 @@ def json2vec(js , key ,dim , gensimWorVec ):
         print("Entrou no não existe a key ")
         return torch.ones([1,dim]).float()*-47
             
-#feli.capati@hotmail.com
+
 
 class selfAttention(nn.Module):
     def __init__(self , model_dim ,heads = 1):
@@ -48,14 +50,22 @@ class selfAttention(nn.Module):
         self.queries = nn.ModuleList([ nn.Linear(model_dim , self.head_dim , bias = False)  for i in range(heads)])
         self.values  = nn.ModuleList([ nn.Linear(model_dim , self.head_dim , bias = False)  for i in range(heads)])
         
-        self.v = Variable(torch.rand(heads , self.head_dim , dtype = float) , requires_grad = True)
-        self.u = Variable(torch.rand(heads , self.head_dim , dtype = float) , requires_grad = True)
+        self.v = Variable(torch.rand(heads , self.head_dim , dtype = float) , requires_grad = True).float()
+        self.u = Variable(torch.rand(heads , self.head_dim , dtype = float) , requires_grad = True).float()
         self.output  = nn.Linear(model_dim , model_dim )
         print("chegou aqui")
 
-
+ 
     def forward(self,value ,key , query, scale = True , mask = False ) :
         
+        # if type(key) != type(torch.tensor([1])) :
+        #     key   = torch.from_numpy(key)
+        #     query = torch.from_numpy(query)
+        #     value = torch.from_numpy(value)
+        # key   = key.float()
+        # query = query.float()
+        # value = value.float()
+
         keys    = torch.cat([k(key  ) for k in self.keys    ],dim=0)
         queries = torch.cat([q(query) for q in self.queries ],dim=0)
         values  = torch.cat([v(value) for v in self.values  ],dim=0)
@@ -66,9 +76,10 @@ class selfAttention(nn.Module):
 
 
         #EMBEDDING Posicional Relativo :
-        pos = torch.arange(0 , -key.shape[1] , -1).view(1,1,-1)
+        pos = torch.arange(0 , -keys.shape[2] , -1).view(1,1,-1)
         pos = torch.cat([pos +i for i in torch.arange( query.shape[0] )] , dim=1)#Faz somente a matriz t-j
-        R   = torch.zeros(self.head_dim , query.shape[0] , key.shape[1])
+        R   = torch.zeros(self.head_dim , query.shape[0] , key.shape[0])
+        # print("pos.shape = {} \nR.shape = {}".format(pos.shape , R.shape))
         #             t.sin(t.cat(tuple(pos*(1e4**(-(2*i)*(1/self.head_dim))) for i in t.arange(pe[0::2,:,:].shape[0])),dim = 0).float())
         R[0::2,:,:] = torch.sin(torch.cat(tuple( pos*(1e4**(-2*i*(1/self.head_dim))) for i in torch.arange( R[0::2,:,:].shape[0] )) , dim = 0 ).float() )
         R[1::2,:,:] = torch.cos(torch.cat(tuple( pos*(1e4**(-2*i*(1/self.head_dim))) for i in torch.arange( int(R.shape[0]/2)) ) , dim = 0).float() )
@@ -76,7 +87,14 @@ class selfAttention(nn.Module):
 
         UxK = torch.cat([torch.cat([i for j in torch.arange(queries.shape[1])] , dim = 0)  for i in torch.einsum("hi,hik->hk",[self.u , keys])] , dim=0 )
         UxK = UxK.reshape(self.heads,queries.shape[1] , keys.shape[2])
-        attention = torch.einsum("lij,ljk->lik",[queries,keys]) + torch.einsum("hid,dji->hij",[queries,R]) + UxK + torch.einsum("hd,dtj->htj",[self.v,R]) 
+        # print("v*R.shape = " , torch.einsum("hd,dtj->htj",[self.v,R]).shape )
+        # # print("v.shape = {} ".format(self.v.shape))
+        # print("R.shape = {} \nqueries.shape = {}".format(R.shape ,queries.shape )  )
+        # # print("keys.shape = {} ".format(keys.shape) )
+        # print("UxK.shape = " , UxK.shape )
+        # print("queries*keys.shape = ", torch.einsum("lij,ljk->lik",[queries,keys]).shape )
+        # print("queries*R = ", torch.einsum("hid,dij->hij",[queries,R]).shape )  #torch.einsum("pld,hlp->hld",[R,queries])
+        attention = torch.einsum("lij,ljk->lik",[queries,keys]) + torch.einsum("hid,dij->hij",[queries,R]) + UxK + torch.einsum("hd,dtj->htj",[self.v,R]) 
         
         if mask :
             # attention = torch.einsum("lij,ljk->lik",[queries,keys])
@@ -147,16 +165,24 @@ class decoder(nn.Module):
         self.EOS = EOS  #End-Of-Sentence Vector
         self.BOS = -EOS #Begin-Of-Sentence Vector
         
-        self.embedding["<BOS>"] = self.BOS.numpy()#DEPOIS TIRAR ESSE NUMPY
-        self.embedding["<EOS>"] = self.EOS.numpy()#DEPOIS TIRAR ESSE NUMPY
+        self.embedding["<BOS>"] = self.BOS#DEPOIS TIRAR ESSE NUMPY
+        self.embedding["<EOS>"] = self.EOS#DEPOIS TIRAR ESSE NUMPY
         self.layers = nn.ModuleList( decoderBlock(model_dim , heads , forward_expansion = forward_expansion) for _ in torch.arange(num_layers))
         # self.linear_Out = nn.Linear(model_dim , len(self.embedding) )---OLHAR AKI DEPOIS---
         self.linear_Out = nn.Linear(model_dim , len(self.embedding.vocab) )
+        if type(EOS) != type(torch.tensor([1])) :
+            self.EOS = torch.from_numpy(self.EOS).float()
+            self.BOS = -self.EOS
 
     def forward_fit(self ,Enc_values , Enc_keys , max_lengh = 100 ) :
         sequence = self.BOS
         soft_Out = [] # nn.ModuleList([])
-        while sequence[-1] != self.EOS or sequence.shape[0]< max_lengh  :# Ta errado
+        # if type(sequence) != type(torch.tensor([1])) :
+        #     Enc_values = torch.from_numpy(Enc_values).float()
+        #     Enc_keys   = torch.from_numpy(Enc_keys).float()
+            # sequence   = torch.from_numpy(self.BOS).float()
+
+        while (sequence[-1] != self.EOS).all() or sequence.shape[0]< max_lengh  :# Ta errado
             buffer = sequence
             for l in self.layers :
                 buffer = l(buffer , Enc_values , Enc_keys)
@@ -165,7 +191,7 @@ class decoder(nn.Module):
             soft_Out.append(buffer)
             
             # sequence = torch.cat((sequence , self.embedding.vocabulary[self.embedding.idx2token[out[0]]]),dim = 0 )
-            sequence = torch.cat((sequence , self.embedding[self.embedding.index2word[out[0]]] ),dim = 0 )
+            sequence = torch.cat((sequence , torch.from_numpy(self.embedding[ self.embedding.index2word[ out[0] ] ] ).float().view(1,-1)),dim = 0 )
 
         return torch.cat(soft_Out ,dim = 0)
         
@@ -205,7 +231,7 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
         self.optimizer = torch.optim.Adam(self.parameters(), n ,Betas)
         lossValue = float("inf")
         Age = 0
-        div = min(len(x),len(y))
+        
         # batch_Input  = [ self.Embedding.sequence2vectors(i) for i in batch_Input  ]
         # batch_Input  = [ self.Embedding.sequence2vectors(i) for i in batch_Input  ]
         # batch_Output = [ self.Embedding.sequence2idx(i)     for i in batch_Output ]
@@ -213,10 +239,15 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
             lossValue = 0
             
             for x,y in zip(batch_Input,batch_Output) :
+                if type(y) != type(torch.tensor([1])) :
+                    x = torch.from_numpy(x).float()
+                    y = torch.from_numpy(y).float()
+                div = len(y)
                 enc = self.encoder(x , mask = False ,scale = True )
+                print('____________DECODER ___________________\n\n\n\n')
                 out = self.decoder.forward_fit(enc , enc , max_lengh = y.shape[0])
                 
-                loss = lossFunction(out , oneHotEncode(self.model_dim, y ))
+                loss = lossFunction(out , mult_oneHotEncode(self.model_dim, y ))
                 lossValue += loss.item()
                 loss.backward()
                 self.optimizer.step()
