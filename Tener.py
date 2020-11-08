@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import random as rd
 from torch.autograd import Variable
 import heapq
-from skip_Gram import skip_gram
+# from skip_Gram import skip_gram
 
 def oneHotEncode(dim, idx):
     vector = torch.zeros(dim)
