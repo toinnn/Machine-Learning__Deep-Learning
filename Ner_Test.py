@@ -57,15 +57,15 @@ if __name__ == "__main__" :
         
 
     embeddingPath = "EmbeddingBaixados\\Word2Vec_skip_s50\\skip_s50.txt"
-    inputPath  ="leNer-Dataset\\raw-Text\\"
-    outputPath = "leNer-Dataset\\Json-Ner\\"
+    # inputPath  ="leNer-Dataset\\raw-Text\\"
+    # outputPath = "leNer-Dataset\\Json-Ner\\"
 
-    ark_Input  = [inputPath + ark  for ark in os.listdir(inputPath)]
-    ark_Output = [outputPath + ark for ark in os.listdir(outputPath)]
+    # ark_Input  = [inputPath + ark  for ark in os.listdir(inputPath)]
+    # ark_Output = [outputPath + ark for ark in os.listdir(outputPath)]
 
 
-    ark = [open( i , "r" , encoding = "utf8").read() for i in ark_Input ]
-    ark_Target = [json.load(open(i , "rb")) for i in ark_Output]
+    # ark = [open( i , "r" , encoding = "utf8").read() for i in ark_Input ]
+    # ark_Target = [json.load(open(i , "rb")) for i in ark_Output]
 
 
     # embed = skip_gram(ark)
@@ -80,19 +80,18 @@ if __name__ == "__main__" :
 
     # print(embed.trainVectors(vectorDim ,n,momentum, maxAge , maxErro ,saveNewPairs = True , device = torch.device("cpu") ) )
 
-    basePath = "C:\\Users\\limaa\\PythonProjects\\VsCodePython\\KPMG\\"
-    saveSkipGramFile = basePath + "1-n={}_dim={}_maxAge={}_momentum={}_maxErro={}.savedSkipGram".format(
-        n,vectorDim,maxAge , momentum ,maxErro)
+    # basePath = "C:\\Users\\limaa\\PythonProjects\\VsCodePython\\KPMG\\"
+    # saveSkipGramFile = basePath + "1-n={}_dim={}_maxAge={}_momentum={}_maxErro={}.savedSkipGram".format(
+    #     n,vectorDim,maxAge , momentum ,maxErro)
     # svFile = open(saveSkipGramFile , "wb")
     # pickle.dump(embed , svFile)
 
     # loadFile = open(saveSkipGramFile , "rb")
     # embed = pickle.load(loadFile)
 
-    # print(embed.vocabulary)
+    
     wv = KeyedVectors.load_word2vec_format(embeddingPath , binary = False)
-    # print(wv["direito"])
-    # print(sen2vec(wv,"funciona mesmo isso," , 50))
+    
 
     # -47 : Key não existente ; -127 : separador entre targets diferentes ; -79 : fora do vocab ; 23 : End-Of-Sentence
     wv["<OOV>"] = np.ones([1,50])*-79
@@ -100,19 +99,30 @@ if __name__ == "__main__" :
     wv["<key_Vazia>"] = np.ones([1,50])*-47
     wv["<EOS>"] = np.ones([1,50])*23
 
-    print(ark[0] ,"\n" , ark_Target[0]["materias"]  )
+    # print(ark[0] ,"\n" , ark_Target[0]["materias"]  )
 
-    ark        = [ sen2vec(wv , i , 50 ) for i in ark ]
-    ark_Target = [ json2idx(js , "materias"  , wv ) for js in ark_Target ]
+    # ark        = [ sen2vec(wv , i , 50 ) for i in ark ]
+    # ark_Target = [ json2idx(js , "materias"  , wv ) for js in ark_Target ]
 
-    print(ark[0] ,"\n" , ark_Target[0]  )
+    # print(ark[0] ,"\n" , ark_Target[0]  )
     # wv["<EOS>"] = np.ones(50)*-79
+    
+    # pickle.dump(wv , open("wv_W2Vec.pickle","wb"))
+    # pickle.dump(ark , open("ark_W2Vec.pickle","wb"))
+    # pickle.dump(ark_Target , open("ark_Target_W2Vec.pickle","wb"))
+
+    #O Git-Hub não permite que seja upado um arquivo tão grande quanto wv_W2Vec.pickle , então pode descomentar a linha 110 para gerar
+    #o wv serializado e depois comentar as linhas de manipulação do wv e descomentar a linha abaixo para conseguir uma execução + rápida
+    # wv = pickle.load(open("wv_W2Vec.pickle","rb"))
+    ark = pickle.load(open("ark_W2Vec.pickle","rb"))
+    ark_Target = pickle.load(open("ark_Target_W2Vec.pickle","rb"))
     
     # print(wv["<EOS>"])
     print(len(wv.vocab))
     model = Tener(50 , 5 ,5 , 6 , 6 ,wv , np.ones([1,50])*23 ) 
-    model.fit(ark , ark_Target , 10 , 0.005 , n = 0.05 )
+    model.fit(ark , ark_Target , 10 , 0.005 , n = 0.05 , lossGraphNumber = 1 )
+    pickle.dump(model , open("1_TenerTreinado_maxAge=10_maxErro=0.005_n=0.05.pickle" , "wb"))
     print("Final")
-    print(wv.vocab["<key_Vazia>"].index)
+    print(wv.vocab["<key_Vazia>"].index) 
 
     

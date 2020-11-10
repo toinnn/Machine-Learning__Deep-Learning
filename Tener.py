@@ -228,11 +228,13 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
         # self.optimizer = torch.optim.Adam(self.parameters(),0.05,(0.9,.999))
 
     
-    def fit(self ,batch_Input , batch_Output , maxAge , maxErro,n = 0.05 ,Betas = (0.9,.999) ,  lossFunction = nn.CrossEntropyLoss() ):
+    def fit(self ,batch_Input , batch_Output , maxAge , maxErro,n = 0.05 ,Betas = (0.9,.999) ,  lossFunction = nn.CrossEntropyLoss() , 
+            lossGraphNumber = 1 ):
         self.optimizer = torch.optim.Adam(self.parameters(), n ,Betas)
         lossValue = float("inf")
         Age = 0
-        
+        lossList = []
+
         # batch_Input  = [ self.Embedding.sequence2vectors(i) for i in batch_Input  ]
         # batch_Input  = [ self.Embedding.sequence2vectors(i) for i in batch_Input  ]
         # batch_Output = [ self.Embedding.sequence2idx(i)     for i in batch_Output ]
@@ -257,6 +259,15 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
                 self.optimizer.step()
                 self.optimizer.zero_grad()
             lossValue = lossValue/div
+            lossList.append(lossValue)
+        plt.plot(range(1 , Age + 1) , lossList)
+        if lossGraphNumber != 1 :
+            plt.savefig("{}_Tener_LossInTrain_Plot.png".format(lossGraphNumber) )
+            plt.savefig("{}_Tener_LossInTrain_Plot.pdf".format(lossGraphNumber) )
+        else :
+            plt.savefig("Tener_LossInTrain_Plot.png")
+            plt.savefig("Tener_LossInTrain_Plot.pdf")
+        
         print("O erro final foi de {} ".format(lossValue))
 
     def forward(self , x ,Enc_mask = False ,Enc_scale = True ,max_lengh = 100 ) :
