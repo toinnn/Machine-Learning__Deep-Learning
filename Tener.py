@@ -9,10 +9,10 @@ import heapq
 
 def oneHotEncode(dim, idx):
     vector = torch.zeros(dim)
-    vector[idx] = 1
+    vector[idx] = 1.0
     return vector    
 def mult_oneHotEncode(dim , idx) :
-    return torch.cat( [ oneHotEncode(dim , i ).view(1,-1) for i in idx ] , dim = 0 )
+    return torch.cat( [ oneHotEncode(dim , i ).view(1,-1) for i in idx ]  , dim = 0 ).float()
 
 def word2vec(wordVec , word ,dim):
     try:
@@ -174,7 +174,7 @@ class decoder(nn.Module):
             self.EOS = torch.from_numpy(self.EOS).float()
             self.BOS = -self.EOS
 
-    def forward_fit(self ,Enc_values , Enc_keys , max_lengh = 100 ) :
+    def forward_fit(self ,Enc_values , Enc_keys , max_lengh  ) :
         sequence = self.BOS
         soft_Out = [] # nn.ModuleList([])
         # if type(sequence) != type(torch.tensor([1])) :
@@ -182,13 +182,14 @@ class decoder(nn.Module):
         #     Enc_keys   = torch.from_numpy(Enc_keys).float()
             # sequence   = torch.from_numpy(self.BOS).float()
 
-        while (sequence[-1] != self.EOS).all() or sequence.shape[0]< max_lengh  :# Ta errado
+        while  sequence.shape[0]<= max_lengh  :# Ta errado
+            print("Mais um loop de Decoder e sequence.shape[0] = " , sequence.shape[0] )
             buffer = sequence
             for l in self.layers :
                 buffer = l(buffer , Enc_values , Enc_keys)
             buffer = F.softmax(self.linear_Out(buffer[-1]) , dim = 0 )
             out = heapq.nlargest(1, enumerate(buffer ) , key = lambda x : x[1])[0]
-            soft_Out.append(buffer)
+            soft_Out.append(buffer.view(1,-1))
             
             # sequence = torch.cat((sequence , self.embedding.vocabulary[self.embedding.idx2token[out[0]]]),dim = 0 )
             sequence = torch.cat((sequence , torch.from_numpy(self.embedding[ self.embedding.index2word[ out[0] ] ] ).float().view(1,-1)),dim = 0 )
@@ -199,7 +200,7 @@ class decoder(nn.Module):
     def forward(self ,Enc_values , Enc_keys , max_lengh = 100 ) :
         sequence = self.BOS
         idx = [len(self.embedding.vocabulary) - 2]
-        while sequence[-1] != self.EOS or sequence.shape[0]< max_lengh - 1 :# Ta errado
+        while sequence[-1] != self.EOS and sequence.shape[0]< max_lengh  :# Ta errado
             buffer = sequence
             for l in layers :
                 buffer = l(buffer , Enc_values , Enc_keys)
@@ -235,10 +236,11 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
         # batch_Input  = [ self.Embedding.sequence2vectors(i) for i in batch_Input  ]
         # batch_Input  = [ self.Embedding.sequence2vectors(i) for i in batch_Input  ]
         # batch_Output = [ self.Embedding.sequence2idx(i)     for i in batch_Output ]
-        while lossValue > maxErro or Age < maxAge :
+        while lossValue > maxErro and Age < maxAge :
             lossValue = 0
             
             for x,y in zip(batch_Input,batch_Output) :
+                print("Alguem escorregou o Prime e y.shape[0] = {}".format(y.shape[0]))
                 if type(y) != type(torch.tensor([1])) :
                     x = torch.from_numpy(x).float()
                     y = torch.from_numpy(y).float()
@@ -247,7 +249,9 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
                 print('____________DECODER ___________________\n\n\n\n')
                 out = self.decoder.forward_fit(enc , enc , max_lengh = y.shape[0])
                 
-                loss = lossFunction(out , mult_oneHotEncode(self.model_dim, y ))
+                print("out.shape = " , out.shape ,"\nmult_oneHotEncode(self.model_dim, y ).shape = " , mult_oneHotEncode(len(self.Embedding.vocab), y ).shape )
+                # loss = lossFunction(out , mult_oneHotEncode(len(self.Embedding.vocab), y ))
+                loss = lossFunction(out , y )
                 lossValue += loss.item()
                 loss.backward()
                 self.optimizer.step()

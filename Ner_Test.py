@@ -47,7 +47,7 @@ if __name__ == "__main__" :
 
     def json2idx(js , key ,gensimWorVec ):
         try :
-            return tensor([ index for sen in js[key] for index in sen2idx(gensimWorVec , sen ) + [gensimWorVec.vocab["<Separador>"].index ]])
+            return tensor([ index for sen in js[key] for index in sen2idx(gensimWorVec , sen ) + [gensimWorVec.vocab["<Separador>"].index ]][:-1])
         except :
             # Key não existente :
             print("Entrou no não existe a key ")
@@ -109,8 +109,8 @@ if __name__ == "__main__" :
     # wv["<EOS>"] = np.ones(50)*-79
     
     # print(wv["<EOS>"])
-    # print(len(wv.vocab))
-    model = Tener(50 , 5 ,5 , 6 , 6 ,wv , np.ones([1,50])*23 )
+    print(len(wv.vocab))
+    model = Tener(50 , 5 ,5 , 6 , 6 ,wv , np.ones([1,50])*23 ) 
     model.fit(ark , ark_Target , 10 , 0.005 , n = 0.05 )
     print("Final")
     print(wv.vocab["<key_Vazia>"].index)
