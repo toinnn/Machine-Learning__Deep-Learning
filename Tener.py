@@ -242,7 +242,7 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
             lossValue = 0
             
             for x,y in zip(batch_Input,batch_Output) :
-                print("Alguem escorregou o Prime e y.shape[0] = {}".format(y.shape[0]))
+                print(" y.shape[0] = {}".format(y.shape[0]))
                 if type(y) != type(torch.tensor([1])) :
                     x = torch.from_numpy(x).float()
                     y = torch.from_numpy(y).float()
@@ -251,7 +251,7 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
                 print('____________DECODER ___________________\n\n\n\n')
                 out = self.decoder.forward_fit(enc , enc , max_lengh = y.shape[0])
                 
-                print("out.shape = " , out.shape ,"\nmult_oneHotEncode(self.model_dim, y ).shape = " , mult_oneHotEncode(len(self.Embedding.vocab), y ).shape )
+                # print("out.shape = " , out.shape ,"\nmult_oneHotEncode(self.model_dim, y ).shape = " , mult_oneHotEncode(len(self.Embedding.vocab), y ).shape )
                 # loss = lossFunction(out , mult_oneHotEncode(len(self.Embedding.vocab), y ))
                 loss = lossFunction(out , y )
                 lossValue += loss.item()

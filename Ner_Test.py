@@ -1,6 +1,7 @@
 if __name__ == "__main__" :
     from Tener import Tener
     from skip_Gram import skip_gram
+    from BiLSTM import BiLSTM
     import os 
     import json
     import torch
@@ -90,14 +91,14 @@ if __name__ == "__main__" :
     # embed = pickle.load(loadFile)
 
     
-    wv = KeyedVectors.load_word2vec_format(embeddingPath , binary = False)
+    # wv = KeyedVectors.load_word2vec_format(embeddingPath , binary = False)
     
 
     # -47 : Key não existente ; -127 : separador entre targets diferentes ; -79 : fora do vocab ; 23 : End-Of-Sentence
-    wv["<OOV>"] = np.ones([1,50])*-79
-    wv["<Separador>"] = np.ones([1,50])*-127
-    wv["<key_Vazia>"] = np.ones([1,50])*-47
-    wv["<EOS>"] = np.ones([1,50])*23
+    # wv["<OOV>"] = np.ones([1,50])*-79
+    # wv["<Separador>"] = np.ones([1,50])*-127
+    # wv["<key_Vazia>"] = np.ones([1,50])*-47
+    # wv["<EOS>"] = np.ones([1,50])*23
 
     # print(ark[0] ,"\n" , ark_Target[0]["materias"]  )
 
@@ -113,15 +114,18 @@ if __name__ == "__main__" :
 
     #O Git-Hub não permite que seja upado um arquivo tão grande quanto wv_W2Vec.pickle , então pode descomentar a linha 110 para gerar
     #o wv serializado e depois comentar as linhas de manipulação do wv e descomentar a linha abaixo para conseguir uma execução + rápida
-    # wv = pickle.load(open("wv_W2Vec.pickle","rb"))
+    wv = pickle.load(open("wv_W2Vec.pickle","rb"))
     ark = pickle.load(open("ark_W2Vec.pickle","rb"))
     ark_Target = pickle.load(open("ark_Target_W2Vec.pickle","rb"))
     
     # print(wv["<EOS>"])
     print(len(wv.vocab))
-    model = Tener(50 , 5 ,5 , 6 , 6 ,wv , np.ones([1,50])*23 ) 
-    model.fit(ark , ark_Target , 10 , 0.005 , n = 0.05 , lossGraphNumber = 1 )
-    pickle.dump(model , open("1_TenerTreinado_maxAge=10_maxErro=0.005_n=0.05.pickle" , "wb"))
+    # model = Tener(50 , 5 ,5 , 6 , 6 ,wv , np.ones([1,50])*23 ) 
+    # model.fit(ark , ark_Target , 10 , 0.005 , n = 0.05 , lossGraphNumber = 1 )
+    # pickle.dump(model , open("1_TenerTreinado_maxAge=10_maxErro=0.005_n=0.05.pickle" , "wb"))
+    lstm = BiLSTM(50 ,100 , 1, 100,1 , len(wv.vocab) , wv , torch.ones([1,50])*23 )
+    # lstm.fit([i.view(1 , i.shape[0] , i.shape[1] ) for i in ark ], ark_Target , 0.05 ,0.06 , 20 )
+    lstm.fit([i.view(1 , i.shape[0] , i.shape[1] ) for i in ark ], ark_Target , 0.05 ,0.06 , 20 )
     print("Final")
     print(wv.vocab["<key_Vazia>"].index) 
 
