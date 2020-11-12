@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import heapq
 import random as rd
+from matplotlib import pyplot as plt
 print("teste")
 class Encoder(nn.Module):
     def __init__(self , input_dim , hidden_size , num_Layers  ):
