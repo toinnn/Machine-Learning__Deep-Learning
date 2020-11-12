@@ -82,7 +82,7 @@ class BiLSTM(nn.Module):
         ctd = 0
         while (buffer  != self.EOS).all() and len(out_seq) < out_max_Len :
             print(buffer.view(1,1,-1).shape)
-            out , hidden_State , cell_State = self.decoder(buffer.view(1,1,-1) , hidden_State , cell_State)
+            out , (hidden_State , cell_State) = self.decoder(buffer.view(1,1,-1) , hidden_State , cell_State)
             out_seq   += [out]
             out        = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
             
@@ -121,8 +121,8 @@ class BiLSTM(nn.Module):
                 loss = lossFunction(out , y)
                 lossValue += loss.item()
                 loss.backward()
-                self.optimizer.step()
-                self.optimizer.zero_grad()
+                optimizer.step()
+                optimizer.zero_grad()
             lossValue = lossValue/div
             lossList.append(lossValue)
         
