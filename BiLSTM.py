@@ -110,6 +110,7 @@ class BiLSTM(nn.Module):
 
         while lossValue > maxErro and Age < maxAge :
             lossValue = 0
+            ctd = 0
             print("Age atual {}".format(Age))
             for x,y in zip(input_Batch , target_Batch ) :
                 if type(y) != type(torch.tensor([1])) :
@@ -119,12 +120,13 @@ class BiLSTM(nn.Module):
                                 
                 out = self.forward_fit(x ,out_max_Len = y.shape[0] ,target = y )
 
-                print("Age atual {}\nout.shape = {} , y.shape = {}".format(Age ,out.shape , y.shape))
+                print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
                 loss = lossFunction(out , y)/div
                 lossValue += loss.item()
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
+                ctd += 1
             lossValue = lossValue/len(target_Batch)
             lossList.append(lossValue)
         
