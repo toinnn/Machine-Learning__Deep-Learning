@@ -79,11 +79,11 @@ class BiLSTM(nn.Module):
         hidden_State , cell_State = self.encoder(x)
 
         out_seq = []
-        buffer = self.BOS
+        buffer = self.BOS.view(1,1,-1)
         ctd = 0
         while (buffer  != self.EOS).all() and len(out_seq) < out_max_Len :
-            print(buffer.shape)
-            out , (hidden_State , cell_State) = self.decoder(buffer , hidden_State , cell_State)
+            # print(buffer.view(1,1,-1).shape)
+            out , (hidden_State , cell_State) = self.decoder(buffer , hidden_State , cell_State) 
             out_seq   += [out]
             out        = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
             
