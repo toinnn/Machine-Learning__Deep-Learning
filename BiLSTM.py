@@ -119,12 +119,12 @@ class BiLSTM(nn.Module):
                 out = self.forward_fit(x ,out_max_Len = y.shape[0] ,target = y )
 
                 print("Age atual {}\nout.shape = {} , y.shape = {}".format(Age ,out.shape , y.shape))
-                loss = lossFunction(out , y)
+                loss = lossFunction(out , y)/div
                 lossValue += loss.item()
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
-            lossValue = lossValue/div
+            lossValue = lossValue/len(target_Batch)
             lossList.append(lossValue)
         
         plt.plot(range(1 , Age + 1) , lossList)
