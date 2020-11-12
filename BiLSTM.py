@@ -83,7 +83,7 @@ class BiLSTM(nn.Module):
         ctd = 0
         while (buffer  != self.EOS).all() and len(out_seq) < out_max_Len :
             # print(buffer.view(1,1,-1).shape)
-            out , (hidden_State , cell_State) = self.decoder(buffer , hidden_State , cell_State) 
+            out , (hidden_State , cell_State) = self.decoder(buffer.view(1,1,-1) , hidden_State , cell_State) 
             out_seq   += [out]
             out        = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
             
@@ -118,7 +118,7 @@ class BiLSTM(nn.Module):
                                 
                 out = self.forward_fit(x ,out_max_Len = y.shape[0] ,target = y )
 
-                print("out.shape = {} , y.shape = {}".format(out.shape , y.shape))
+                print("Age atual {}\nout.shape = {} , y.shape = {}".format(Age ,out.shape , y.shape))
                 loss = lossFunction(out , y)
                 lossValue += loss.item()
                 loss.backward()
