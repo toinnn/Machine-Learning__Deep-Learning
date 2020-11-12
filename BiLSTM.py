@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import heapq
 import random as rd
+print("teste")
 class Encoder(nn.Module):
     def __init__(self , input_dim , hidden_size , num_Layers  ):
         super(Encoder , self).__init__()
@@ -81,8 +82,8 @@ class BiLSTM(nn.Module):
         buffer = self.BOS
         ctd = 0
         while (buffer  != self.EOS).all() and len(out_seq) < out_max_Len :
-            print(buffer.view(1,1,-1).shape)
-            out , (hidden_State , cell_State) = self.decoder(buffer.view(1,1,-1) , hidden_State , cell_State)
+            print(buffer.shape)
+            out , (hidden_State , cell_State) = self.decoder(buffer , hidden_State , cell_State)
             out_seq   += [out]
             out        = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
             
@@ -128,9 +129,9 @@ class BiLSTM(nn.Module):
         
         plt.plot(range(1 , Age + 1) , lossList)
         if lossGraphNumber != 1 :
-            plt.savefig("{}_BiLSTM_LossInTrain_Plot.png".format(lossGraphNumber) )
-            plt.savefig("{}_BiLSTM_LossInTrain_Plot.pdf".format(lossGraphNumber) )
+            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_LossInTrain_Plot.png".format(lossGraphNumber) )
+            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_LossInTrain_Plot.pdf".format(lossGraphNumber) )
         else :
-            plt.savefig("BiLSTM_LossInTrain_Plot.png")
-            plt.savefig("BiLSTM_LossInTrain_Plot.pdf")
+            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_LossInTrain_Plot.png")
+            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_LossInTrain_Plot.pdf")
         plt.show()
