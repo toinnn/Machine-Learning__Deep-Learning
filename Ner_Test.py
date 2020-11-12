@@ -125,8 +125,9 @@ if __name__ == "__main__" :
     # pickle.dump(model , open("1_TenerTreinado_maxAge=10_maxErro=0.005_n=0.05.pickle" , "wb"))
     lstm = BiLSTM(50 ,100 , 1, 100,1 , len(wv.vocab) , wv , torch.ones([1,50])*23 )
     # lstm.fit([i.view(1 , i.shape[0] , i.shape[1] ) for i in ark ], ark_Target , 0.05 ,0.06 , 20 )
-    lstm.fit([i.view(1 , i.shape[0] , i.shape[1] ) for i in ark ], ark_Target , 0.05 ,0.06 , 10 )
-    pickle.dump(lstm , open("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/lstm_n=0.05_maxErro=0.06_maxAge=10.pickle","wb"))
+    # lstm.fit([i.view(1 , i.shape[0] , i.shape[1] ) for i in ark ], ark_Target , 0.05 ,0.06 , 10 )
+    # pickle.dump(lstm , open("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/lstm_n=0.05_maxErro=0.06_maxAge=10.pickle","wb"))
+    print("len Ark = {}  , len target = {}".format(len(ark) , len(ark_Target)))
     print("Final")
     print(wv.vocab["<key_Vazia>"].index) 
 

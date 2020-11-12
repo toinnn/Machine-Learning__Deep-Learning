@@ -242,7 +242,7 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
             lossValue = 0
             
             for x,y in zip(batch_Input,batch_Output) :
-                print(" y.shape[0] = {}".format(y.shape[0]))
+                print("y.shape[0] = {}".format(y.shape[0]))
                 if type(y) != type(torch.tensor([1])) :
                     x = torch.from_numpy(x).float()
                     y = torch.from_numpy(y).float()
@@ -258,6 +258,7 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
                 loss.backward()
                 self.optimizer.step()
                 self.optimizer.zero_grad()
+            Age += 1
             lossValue = lossValue/div
             lossList.append(lossValue)
         plt.plot(range(1 , Age + 1) , lossList)

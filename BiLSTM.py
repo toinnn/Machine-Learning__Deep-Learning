@@ -127,6 +127,7 @@ class BiLSTM(nn.Module):
                 optimizer.step()
                 optimizer.zero_grad()
                 ctd += 1
+            Age += 1
             lossValue = lossValue/len(target_Batch)
             lossList.append(lossValue)
         
