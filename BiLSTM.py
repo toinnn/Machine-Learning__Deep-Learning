@@ -155,7 +155,9 @@ class BiLSTM(nn.Module):
                 print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
                 loss = lossFunction(out , y)/div
                 lossValue += loss.item()
+                print("Pré backward")
                 loss.backward()
+                print("Pós backward")
                 optimizer.step()
                 optimizer.zero_grad()
                 ctd += 1
