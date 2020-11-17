@@ -84,12 +84,12 @@ class BiLSTM(nn.Module):
         #ENCODER :
         hidden_State = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder )]
         cell_State   = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder )]
-        
+        print("pré lista de estados")
         for word in x :
             hidden , cell = self.encoder(word.view(1 , 1 , word.shape[0] ) , hidden_State[-1] , cell_State[-1] )
             hidden_State += [hidden] 
             cell_State += [cell]
-
+        print("pós lista de estados")
         
         #DECODER :
         out_seq = []
