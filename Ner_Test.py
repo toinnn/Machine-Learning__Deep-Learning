@@ -129,7 +129,7 @@ if __name__ == "__main__" :
     # pickle.dump(lstm , open("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/lstm_n=0.05_maxErro=0.06_maxAge=10.pickle","wb"))
     print("len Ark = {}  , len target = {}".format(len(ark) , len(ark_Target)))
 
-    print(tuple(i.shape for i in lstm.encoder(ark[0].view(1,ark[0].shape[0] , ark[0].shape[1] )) ) )
+    # print(tuple(i.shape for i in lstm.encoder(ark[0].view(1,ark[0].shape[0] , ark[0].shape[1] )) ) )
     print("Final")
     print(wv.vocab["<key_Vazia>"].index) 
 
