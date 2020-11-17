@@ -107,8 +107,8 @@ class BiLSTM(nn.Module):
             att_hidden  = tuple((self.attention(torch.cat((i.view( -1 ) , hidden.view( -1 ) ) , dim = 0))  for i in hidden_State)) 
             att_cell    = tuple((self.attention(torch.cat((i.view( -1 ) , cell.view( -1 ) ) , dim = 0) )  for i in cell_State ))
             # print(att_hidden[0])
-            att_hidden = F.softmax( torch.cat( att_hidden , dim = 0 ))
-            att_cell   = F.softmax( torch.cat( att_cell , dim = 0 ))
+            att_hidden = F.softmax( torch.cat( att_hidden , dim = 0 ) , dim = 0)
+            att_cell   = F.softmax( torch.cat( att_cell , dim = 0 ) , dim = 0)
             
             att_hidden  = sum( att_hidden[i]*hidden_State[i]  for i in range(len(hidden_State)))
             att_cell    = sum( att_cell[i]*cell_State[i]  for i in range(len(cell_State)) )
