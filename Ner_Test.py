@@ -62,18 +62,18 @@ if __name__ == "__main__" :
                 if type(js[key])==type([]) :
                     Classified = []
                     for content in js[key] :
-                        if content not in classes :
-                            classes += {content:len(classes.keys())}
+                        if content not in classes.keys() :
+                            classes[content] = len(classes.keys())
                         Classified += [classes[content]]
                 else :
-                    if js[key] not in classes :
-                        classes += {js[key]:len(classes.keys())}
+                    if js[key] not in classes.keys() :
+                        classes[js[key]] = len(classes.keys())
                     Classified  = [classes[js[key]]]
                 classifiedList += [torch.tensor(Classified)]
             except :
-                classifiedList += [-1]
-        
-        return classes , [ i if i!=-1 else torch.tensor([len(classes.keys())]) for i in classifiedList  ]
+                classifiedList += torch.tensor([-1])
+        print("Classes igual a " , classes )
+        return classes , [ i if (i !=-1).all() else torch.tensor([len(classes.keys())]) for i in classifiedList  ]
     # -47 : Key não existente ; -127 : separador entre targets diferentes ; -79 : fora do vocab ; 23 : End-Of-Sentence
         
 
@@ -82,11 +82,11 @@ if __name__ == "__main__" :
     outputPath = "leNer-Dataset\\Json-Ner\\"
 
     # ark_Input  = [inputPath + ark  for ark in os.listdir(inputPath)]
-    # ark_Output = [outputPath + ark for ark in os.listdir(outputPath)]
+    ark_Output = [outputPath + ark for ark in os.listdir(outputPath)]
 
 
     # ark = [open( i , "r" , encoding = "utf8").read() for i in ark_Input ]
-    # ark_Target = [json.load(open(i , "rb")) for i in ark_Output]
+    ark_Target = [json.load(open(i , "rb")) for i in ark_Output]
 
     # materias = []
     # for i in ark_Target :
@@ -145,15 +145,15 @@ if __name__ == "__main__" :
     
     # ark        = [ sen2vec(wv , i , 50 ) for i in ark ]
     # ark_Target = [ json2idx(js , "materias" , wv) for js in ark_Target ]
-    # classes , ark_Target = jsonList2classes(ark_Target , "materias")
+    classes , ark_Target = jsonList2classes(ark_Target , "materias")
 
     # print(ark[0] ,"\n" , ark_Target[0]  )
     # wv["<EOS>"] = np.ones(50)*-79
     
     # pickle.dump(wv , open("wv_W2Vec.pickle","wb"))
     # pickle.dump(ark , open("ark_W2Vec.pickle","wb"))
-    # pickle.dump(ark_Target , open("ark_Target_W2Vec.pickle","wb"))
-    # pickle.dump(classes , open("classesTarget_Entity_materias_W2Vec.pickle","wb"))
+    pickle.dump(ark_Target , open("ark_Target_W2Vec.pickle","wb"))
+    pickle.dump(classes , open("classesTarget_Entity_materias_W2Vec.pickle","wb"))
 
     #O Git-Hub não permite que seja upado um arquivo tão grande quanto wv_W2Vec.pickle , então pode descomentar a linha 110 para gerar
     #o wv serializado e depois comentar as linhas de manipulação do wv e descomentar a linha abaixo para conseguir uma execução + rápida
@@ -163,7 +163,7 @@ if __name__ == "__main__" :
     classes = pickle.load(open("classesTarget_Entity_materias_W2Vec.pickle","rb"))
     
     # print(wv["<EOS>"])
-    print(len(wv.vocab))
+    print(ark_Target)
     # model = Tener(50 , 5 ,5 , 6 , 6 ,wv , np.ones([1,50])*23 ) 
     # model.fit(ark , ark_Target , 10 , 0.005 , n = 0.05 , lossGraphNumber = 1 )
     # pickle.dump(model , open("1_TenerTreinado_maxAge=10_maxErro=0.005_n=0.05.pickle" , "wb"))
