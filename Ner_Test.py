@@ -79,7 +79,7 @@ if __name__ == "__main__" :
 
     # embeddingPath = "EmbeddingBaixados\\Word2Vec_skip_s50\\skip_s50.txt"
     # inputPath  ="leNer-Dataset\\raw-Text\\"
-    # outputPath = "leNer-Dataset\\Json-Ner\\"
+    outputPath = "leNer-Dataset\\Json-Ner\\"
 
     # ark_Input  = [inputPath + ark  for ark in os.listdir(inputPath)]
     # ark_Output = [outputPath + ark for ark in os.listdir(outputPath)]
@@ -153,14 +153,14 @@ if __name__ == "__main__" :
     # pickle.dump(wv , open("wv_W2Vec.pickle","wb"))
     # pickle.dump(ark , open("ark_W2Vec.pickle","wb"))
     # pickle.dump(ark_Target , open("ark_Target_W2Vec.pickle","wb"))
-    # pickle.dump(classes , open("classesTarget_Entity:materias_W2Vec.pickle","wb"))
+    # pickle.dump(classes , open("classesTarget_Entity_materias_W2Vec.pickle","wb"))
 
     #O Git-Hub não permite que seja upado um arquivo tão grande quanto wv_W2Vec.pickle , então pode descomentar a linha 110 para gerar
     #o wv serializado e depois comentar as linhas de manipulação do wv e descomentar a linha abaixo para conseguir uma execução + rápida
     wv = pickle.load(open("wv_W2Vec.pickle","rb"))
     ark = pickle.load(open("ark_W2Vec.pickle","rb"))
     ark_Target = pickle.load(open("ark_Target_W2Vec.pickle","rb"))
-    classes = pickle.load(open("classesTarget_Entity:materias_W2Vec.pickle","rb"))
+    classes = pickle.load(open("classesTarget_Entity_materias_W2Vec.pickle","rb"))
     
     # print(wv["<EOS>"])
     print(len(wv.vocab))
