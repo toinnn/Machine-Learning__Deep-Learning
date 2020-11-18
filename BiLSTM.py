@@ -159,7 +159,7 @@ class BiLSTM(nn.Module):
 class BiLSTM_Attention(nn.Module):
     def __init__(self , input_dim , hidden_size_Encoder , num_Layers_Encoder ,
             hidden_size_Decoder , num_Layers_Decoder , num_classes , embedding , EOS_Vector ):
-        super(BiLSTM , self).__init__()
+        super(BiLSTM_Attention, self).__init__()
         
         self.input_dim   = input_dim
         
