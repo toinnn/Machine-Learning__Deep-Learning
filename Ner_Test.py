@@ -145,15 +145,15 @@ if __name__ == "__main__" :
     
     # ark        = [ sen2vec(wv , i , 50 ) for i in ark ]
     # ark_Target = [ json2idx(js , "materias" , wv) for js in ark_Target ]
-    classes , ark_Target = jsonList2classes(ark_Target , "materias")
+    # classes , ark_Target = jsonList2classes(ark_Target , "materias")
 
     # print(ark[0] ,"\n" , ark_Target[0]  )
     # wv["<EOS>"] = np.ones(50)*-79
     
     # pickle.dump(wv , open("wv_W2Vec.pickle","wb"))
     # pickle.dump(ark , open("ark_W2Vec.pickle","wb"))
-    pickle.dump(ark_Target , open("ark_Target_W2Vec.pickle","wb"))
-    pickle.dump(classes , open("classesTarget_Entity_materias_W2Vec.pickle","wb"))
+    # pickle.dump(ark_Target , open("ark_Target_W2Vec.pickle","wb"))
+    # pickle.dump(classes , open("classesTarget_Entity_materias_W2Vec.pickle","wb"))
 
     #O Git-Hub não permite que seja upado um arquivo tão grande quanto wv_W2Vec.pickle , então pode descomentar a linha 110 para gerar
     #o wv serializado e depois comentar as linhas de manipulação do wv e descomentar a linha abaixo para conseguir uma execução + rápida
