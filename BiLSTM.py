@@ -192,7 +192,7 @@ class BiLSTM_Attention(nn.Module):
 
         self.encoder   = Encoder( input_dim , hidden_size_Encoder , num_Layers_Encoder , device )
         self.decoder   = Decoder(  input_dim , hidden_size_Decoder , num_Layers_Decoder , num_classes , device)
-        self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 ,device = device )
+        self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 ).to(device)
         #    hidden_size_Decoder*num_Layers_Decoder*2 )
         self.device = device
 
