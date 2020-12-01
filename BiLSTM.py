@@ -238,7 +238,7 @@ class BiLSTM_Attention(nn.Module):
         #     hidden_State += [hidden] 
         #     cell_State += [cell]
         hidden_State , _ = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
-        hidden_State = hidden_State.permute(1,0,2)[0]
+        hidden_State = tuple(hidden_State.permute(1,0,2)[0])
         # print("pós lista de estados")
         
         #DECODER :
