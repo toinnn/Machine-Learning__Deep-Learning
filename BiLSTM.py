@@ -28,7 +28,7 @@ class Encoder(nn.Module):
         x , (hidden , cell )  = self.lstm(x , (hidden , cell))
 
         # return self.lstm(x , (h0 , c0))[1]
-        return hidden , cell
+        return x , (hidden , cell)
 
 class Decoder(nn.Module):
     def __init__(self , input_dim , hidden_size , num_Layers , num_classes , device = torch.device("cpu") ):
@@ -86,7 +86,7 @@ class BiLSTM(nn.Module):
         hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
         cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
         
-        hidden_State , cell_State = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
+        _ , (hidden_State , cell_State) = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
 
         seq = []
         buffer = self.BOS.to(device)
@@ -107,7 +107,7 @@ class BiLSTM(nn.Module):
         hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
         cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
         
-        hidden , cell = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
+        _ , (hidden , cell) = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
         
         
         #DECODER :
@@ -230,13 +230,15 @@ class BiLSTM_Attention(nn.Module):
         
         # x = x.view(1 , x.shape[0] , x.shape[1] )
         #ENCODER :
-        hidden_State = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )]
-        cell_State   = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )]
+        hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
+        cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
         # print("pré lista de estados")
-        for word in x.to(self.device) :
-            hidden , cell = self.encoder(word.view(1 , 1 , word.shape[0] ) , hidden_State[-1] , cell_State[-1] )
-            hidden_State += [hidden] 
-            cell_State += [cell]
+        # for word in x.to(self.device) :
+        #     hidden , cell = self.encoder(word.view(1 , 1 , word.shape[0] ) , hidden_State[-1] , cell_State[-1] )
+        #     hidden_State += [hidden] 
+        #     cell_State += [cell]
+        hidden_State , _ = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State[-1] , cell_State[-1] )
+        hidden_State = hidden_State.permute(1,0,2)[0]
         # print("pós lista de estados")
         
         #DECODER :
