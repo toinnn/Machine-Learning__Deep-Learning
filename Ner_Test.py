@@ -8,9 +8,11 @@ if __name__ == "__main__" :
     import torch.tensor as tensor
     import pickle
     from gensim.models.keyedvectors import KeyedVectors
+    from torchtext.vocab import Vectors
+    from torchtext.data import Field
     import re
     import numpy as np
-
+    # torch.set_printoptions(precision=20)
     def word2vec(wordVec , word ,dim):
         try:
             
@@ -76,18 +78,27 @@ if __name__ == "__main__" :
         return classes , [ i if (i !=-1).all() else torch.tensor([len(classes.keys())]) for i in classifiedList  ]
     # -47 : Key não existente ; -127 : separador entre targets diferentes ; -79 : fora do vocab ; 23 : End-Of-Sentence
         
+    # class embedding(torch.nn.Dataset):
+    #     def __init__(self , vectorPath ):
+    #         super(embedding , self ).__init__()
+    #         self.word2vec = Vectors(name = vectorPath)
+    #         self.idx2word = self.word2vec
+    
 
-    # embeddingPath = "EmbeddingBaixados\\Word2Vec_skip_s50\\skip_s50.txt"
+    embeddingPath = "EmbeddingBaixados\\Word2Vec_skip_s50\\skip_s50.txt"
     # inputPath  ="leNer-Dataset\\raw-Text\\"
-    outputPath = "leNer-Dataset\\Json-Ner\\"
+    # outputPath = "leNer-Dataset\\Json-Ner\\"
 
     # ark_Input  = [inputPath + ark  for ark in os.listdir(inputPath)]
-    ark_Output = [outputPath + ark for ark in os.listdir(outputPath)]
+    # ark_Output = [outputPath + ark for ark in os.listdir(outputPath)]
 
 
     # ark = [open( i , "r" , encoding = "utf8").read() for i in ark_Input ]
-    ark_Target = [json.load(open(i , "rb")) for i in ark_Output]
+    # ark_Target = [json.load(open(i , "rb")) for i in ark_Output]
 
+    # embedding = vocab.Vectors(name = embeddingPath )
+    # print(embedding["oi"])
+    
     # materias = []
     # for i in ark_Target :
     #     try :
@@ -106,10 +117,7 @@ if __name__ == "__main__" :
     #     'Direito Processual Penal', 'Direito Eleitoral', 'Direito Processual Penal Militar', 'Direito Previdenciário', '']
     # print("as materias únicas são " , materias ) #12 classes e uma indicando que não tem
     # print(ark_Target[0]["materias"])
-    # teste = "palavra"
-    # print(teste)
-    # teste = [teste] if type(teste)==type("exe") 
-    # print(teste)
+    
     # embed = skip_gram(ark)
     # embed.tokenize()
 
@@ -119,7 +127,7 @@ if __name__ == "__main__" :
     maxAge    = 1
     maxErro   = 0.005
 
-
+    # ("input" , {"ENtities":[(,"materias"),()]})
     # print(embed.trainVectors(vectorDim ,n,momentum, maxAge , maxErro ,saveNewPairs = True , device = torch.device("cpu") ) )
 
     basePath = "C:\\Users\\limaa\\PythonProjects\\VsCodePython\\KPMG\\"
@@ -162,19 +170,19 @@ if __name__ == "__main__" :
     ark_Target = pickle.load(open("ark_Target_W2Vec.pickle","rb"))
     classes = pickle.load(open("classesTarget_Entity_materias_W2Vec.pickle","rb"))
     
-    # print(wv["<EOS>"])
-    print(ark_Target)
+    wv = Vectors(name = "EmbeddingBaixados\\Word2Vec_skip_s50\\skip_s50.txt")
+    print(wv["oi"])
     # model = Tener(50 , 5 ,5 , 6 , 6 ,wv , np.ones([1,50])*23 ) 
     # model.fit(ark , ark_Target , 10 , 0.005 , n = 0.05 , lossGraphNumber = 1 )
     # pickle.dump(model , open("1_TenerTreinado_maxAge=10_maxErro=0.005_n=0.05.pickle" , "wb"))
-    lstm = BiLSTM(50 ,100 , 1, 100,1 , len(classes.keys()) + 1, wv , torch.ones([1,50])*23 )
-    # lstm.fit(ark, ark_Target , 0.05 ,0.06 , 20 )
+    lstm = BiLSTM(50 ,100 , 1, 100,1 , len(classes.keys()) + 1, wv , torch.ones([1,50])*23 ,torch.device("cuda"))
+    lstm.fit(ark, ark_Target , 0.05 ,0.06 , 20 )
     # lstm.fit([i.view(1 , i.shape[0] , i.shape[1] ) for i in ark ], ark_Target , 0.05 ,0.06 , 10 )
     # pickle.dump(lstm , open("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/lstm_n=0.05_maxErro=0.06_maxAge=10.pickle","wb"))
-    print("len Ark = {}  , len target = {}".format(len(ark) , len(ark_Target)))
+    # print("len Ark = {}  , len target = {}".format(len(ark) , len(ark_Target)))
 
     # print(tuple(i.shape for i in lstm.encoder(ark[0].view(1,ark[0].shape[0] , ark[0].shape[1] )) ) )
     print("Final")
-    print(wv.vocab["<key_Vazia>"].index) 
+    # print(wv.vocab["<key_Vazia>"].index) 
 
     

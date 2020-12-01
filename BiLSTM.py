@@ -5,15 +5,22 @@ import heapq
 import random as rd
 from matplotlib import pyplot as plt
 print("teste")
+
 class Encoder(nn.Module):
-    def __init__(self , input_dim , hidden_size , num_Layers  ):
+    def __init__(self , input_dim , hidden_size , num_Layers , device = torch.device("cpu") ):
         super(Encoder , self).__init__()
         self.hidden_size = hidden_size
         self.input_dim   = input_dim
         self.num_Layers  = num_Layers
-        self.lstm        = nn.LSTM(input_dim , hidden_size , num_Layers , batch_first = True , bidirectional = True)
+        self.lstm        = nn.LSTM(input_dim , hidden_size , num_Layers , batch_first = True , bidirectional = True).to(device)
         # self.linear      = nn.Linear(hidden_size*2 , num_classes )
+        self.device      = device
 
+    def setDevice(self , device):
+        self.device = device
+        self.lstm   = self.lstm.to(device)
+        # self.linear.to(device)
+    
     def forward(self , x , hidden , cell ) :
         # h0 = torch.zeros(self.num_Layers*2 , len(x) , self.hidden_size )
         # c0 = torch.zeros(self.num_Layers*2 , len(x) , self.hidden_size )
@@ -24,14 +31,20 @@ class Encoder(nn.Module):
         return hidden , cell
 
 class Decoder(nn.Module):
-    def __init__(self , input_dim , hidden_size , num_Layers , num_classes ):
+    def __init__(self , input_dim , hidden_size , num_Layers , num_classes , device = torch.device("cpu") ):
         super(Decoder , self).__init__()
         self.hidden_size = hidden_size
         self.input_dim   = input_dim
         self.num_Layers  = num_Layers
-        self.lstm        = nn.LSTM(input_dim , hidden_size , num_Layers , batch_first = True , bidirectional = True)
-        self.linear      = nn.Linear(hidden_size*2 , num_classes )
+        self.lstm        = nn.LSTM(input_dim , hidden_size , num_Layers , batch_first = True , bidirectional = True).to(device)
+        self.linear      = nn.Linear(hidden_size*2 , num_classes ).to(device)
+        self.device      = device
 
+    def setDevice(self , device):
+        self.device = device
+        self.lstm   = self.lstm.to(device)
+        self.linear = self.linear.to(device)
+    
     def forward(self , x , hidden_State , cell_State) :
         # h0 = torch.zeros(self.num_Layers*2 , x.size(0) , self.hidden_size )
         # c0 = torch.zeros(self.num_Layers*2 , x.size(0) , self.hidden_size )
@@ -42,37 +55,45 @@ class Decoder(nn.Module):
 
 class BiLSTM(nn.Module):
     def __init__(self , input_dim , hidden_size_Encoder , num_Layers_Encoder ,
-            hidden_size_Decoder , num_Layers_Decoder , num_classes , embedding , EOS_Vector ):
+            hidden_size_Decoder , num_Layers_Decoder , num_classes , embedding , EOS_Vector , device = torch.device("cpu") ):
         super(BiLSTM , self).__init__()
         
         self.input_dim   = input_dim
+        self.device      = device
         
         self.hidden_size_Encoder = hidden_size_Encoder
         self.num_Layers_Encoder  = num_Layers_Encoder
-        self.hidden_size_Decoder = hidden_size_Decoder
+        self.hidden_size_Decoder = hidden_size_Decoder 
         self.num_Layers_Decoder  = num_Layers_Decoder
 
-        self.encoder   = Encoder( input_dim , hidden_size_Encoder , num_Layers_Encoder)
-        self.decoder   = Decoder(  input_dim , hidden_size_Decoder , num_Layers_Decoder , num_classes)
-        self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 )
+        self.encoder   = Encoder( input_dim , hidden_size_Encoder , num_Layers_Encoder , device)
+        self.decoder   = Decoder(  input_dim , hidden_size_Decoder , num_Layers_Decoder , num_classes , device )
+        # self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 )
         #    hidden_size_Decoder*num_Layers_Decoder*2 )
         self.embedding = embedding
         self.EOS = EOS_Vector
         self.BOS = -EOS_Vector
+        #type(.stoi) == type({"token":index}) , type(.itos) == type(["token",..]) , type(vectors)==type([vec0,vec1,vec2,..]) 
+
+    def setDevice(self , device):
+        self.encoder.setDevice(device)
+        self.decoder.setDevice(device)
+        self.EOS = self.EOS.to(self.device)
+        self.BOS = self.BOS.to(self.device)
 
     def forward(self , x , out_max_Len = 150) :
-        # h0 = torch.zeros(self.num_Layers*2 , x.size(0) , self.hidden_size )
-        # c0 = torch.zeros(self.num_Layers*2 , x.size(0) , self.hidden_size )
+        hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
+        cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
         
-        hidden_State , cell_State = self.encoder(x)
+        hidden_State , cell_State = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
 
         seq = []
-        buffer = self.BOS
+        buffer = self.BOS.to(device)
         while (buffer != self.EOS).all() and seq.shape[0] < out_max_Len :
-            out , hidden_State , cell_State = self.decoder(buffer , hidden_State , cell_State)
+            out , hidden_State , cell_State = self.decoder(buffer , hidden_State , cell_State )
             out    = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
-            word   = self.embedding.index2word[ out[0] ]
-            buffer = torch.from_numpy( self.embedding[ word ] ).float()
+            word   = self.embedding.itos[ out[0] ]
+            buffer = self.embedding[ word ].to(self.device).float()
             seq   += [word]
         
         return seq
@@ -82,18 +103,18 @@ class BiLSTM(nn.Module):
         
         # x = x.view(1 , x.shape[0] , x.shape[1] )
         #ENCODER :
-        hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder )
-        cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder )
+        hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
+        cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
         
-        hidden , cell = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ) , hidden_State , cell_State )
+        hidden , cell = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
         
         
         #DECODER :
         out_seq = []
-        buffer = self.BOS.view(1,1,-1)
+        buffer = self.BOS.view(1,1,-1).to(self.device)
         ctd = 0
-        
-        while (buffer  != self.EOS).all() and len(out_seq) < out_max_Len :
+        # teste = (buffer  != self.EOS.to(self.device)).all()
+        while (buffer  != self.EOS.to(self.device)).all() and len(out_seq) < out_max_Len :
             # print(buffer.view(1,1,-1).shape)
             
             
@@ -102,11 +123,11 @@ class BiLSTM(nn.Module):
             out        = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
             
             if target != None and rd.random() < force_target_input_rate :
-                word   = self.embedding.index2word[target[ctd]]  
+                word   = self.embedding.itos[target[ctd]]  
             else:
-                word   = self.embedding.index2word[ out[0] ]
+                word   = self.embedding.itos[ out[0] ]
         
-            buffer = torch.from_numpy( self.embedding[ word ] ).float() 
+            buffer = self.embedding[ word ].float().to(self.device) 
             ctd   += 1
             
         
@@ -132,10 +153,10 @@ class BiLSTM(nn.Module):
                     y = torch.from_numpy(y).float()
                 div = len(y)
                                 
-                out = self.forward_fit(x ,out_max_Len = y.shape[0] ,target = y )
+                out = self.forward_fit(x ,out_max_Len = y.shape[0] ,target = y.to(self.device) )
 
                 print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
-                loss = lossFunction(out , y)/div
+                loss = lossFunction(out , y.to(self.device))/div
                 lossValue += loss.item()
                 print("Pré backward")
                 loss.backward()
@@ -198,8 +219,8 @@ class BiLSTM_Attention(nn.Module):
         
         # x = x.view(1 , x.shape[0] , x.shape[1] )
         #ENCODER :
-        hidden_State = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder )]
-        cell_State   = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder )]
+        hidden_State = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )]
+        cell_State   = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )]
         print("pré lista de estados")
         for word in x :
             hidden , cell = self.encoder(word.view(1 , 1 , word.shape[0] ) , hidden_State[-1] , cell_State[-1] )
@@ -283,10 +304,10 @@ class BiLSTM_Attention(nn.Module):
         
         plt.plot(range(1 , Age + 1) , lossList)
         if lossGraphNumber != 1 :
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_LossInTrain_Plot.png".format(lossGraphNumber) )
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_LossInTrain_Plot.pdf".format(lossGraphNumber) )
+            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_ATTENTON_LossInTrain_Plot.png".format(lossGraphNumber) )
+            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_ATTENTON_LossInTrain_Plot.pdf".format(lossGraphNumber) )
         else :
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_LossInTrain_Plot.png")
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_LossInTrain_Plot.pdf")
+            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_ATTENTON_LossInTrain_Plot.png")
+            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_ATTENTON_LossInTrain_Plot.pdf")
         plt.show()
 
