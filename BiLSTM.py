@@ -190,12 +190,12 @@ class BiLSTM_Attention(nn.Module):
         self.hidden_size_Decoder = hidden_size_Decoder
         self.num_Layers_Decoder  = num_Layers_Decoder
 
-        self.encoder   = Encoder( input_dim , hidden_size_Encoder , num_Layers_Encoder).to(device)
-        self.decoder   = Decoder(  input_dim , hidden_size_Decoder , num_Layers_Decoder , num_classes).to(device)
-        self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 ).to(device)
+        self.encoder   = Encoder( input_dim , hidden_size_Encoder , num_Layers_Encoder , device )
+        self.decoder   = Decoder(  input_dim , hidden_size_Decoder , num_Layers_Decoder , num_classes , device)
+        self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 ,device = device )
         #    hidden_size_Decoder*num_Layers_Decoder*2 )
         self.device = device
-        
+
         self.embedding = embedding
         self.EOS = EOS_Vector.to(device)
         self.BOS = -EOS_Vector.to(device)
@@ -298,7 +298,7 @@ class BiLSTM_Attention(nn.Module):
                     y = torch.from_numpy(y).float()
                 div = len(y)
                                 
-                out = self.forward_fit(x ,out_max_Len = y.shape[0] ,target = y.to(self.device) )
+                out = self.forward_fit(x , out_max_Len = y.shape[0] ,target = y.to(self.device) )
 
                 print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
                 loss = lossFunction(out , y.to(self.device))/div
