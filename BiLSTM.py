@@ -194,6 +194,8 @@ class BiLSTM_Attention(nn.Module):
         self.decoder   = Decoder(  input_dim , hidden_size_Decoder , num_Layers_Decoder , num_classes).to(device)
         self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 ).to(device)
         #    hidden_size_Decoder*num_Layers_Decoder*2 )
+        self.device = device
+        
         self.embedding = embedding
         self.EOS = EOS_Vector.to(device)
         self.BOS = -EOS_Vector.to(device)
