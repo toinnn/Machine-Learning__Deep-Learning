@@ -76,6 +76,7 @@ class BiLSTM(nn.Module):
         #type(.stoi) == type({"token":index}) , type(.itos) == type(["token",..]) , type(vectors)==type([vec0,vec1,vec2,..]) 
 
     def setDevice(self , device):
+        self.device = device
         self.encoder.setDevice(device)
         self.decoder.setDevice(device)
         self.EOS = self.EOS.to(self.device)
@@ -179,7 +180,7 @@ class BiLSTM(nn.Module):
 
 class BiLSTM_Attention(nn.Module):
     def __init__(self , input_dim , hidden_size_Encoder , num_Layers_Encoder ,
-            hidden_size_Decoder , num_Layers_Decoder , num_classes , embedding , EOS_Vector ):
+            hidden_size_Decoder , num_Layers_Decoder , num_classes , embedding , EOS_Vector ,device = torch.device("cpu") ):
         super(BiLSTM_Attention, self).__init__()
         
         self.input_dim   = input_dim
@@ -189,13 +190,21 @@ class BiLSTM_Attention(nn.Module):
         self.hidden_size_Decoder = hidden_size_Decoder
         self.num_Layers_Decoder  = num_Layers_Decoder
 
-        self.encoder   = Encoder( input_dim , hidden_size_Encoder , num_Layers_Encoder)
-        self.decoder   = Decoder(  input_dim , hidden_size_Decoder , num_Layers_Decoder , num_classes)
-        self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 )
+        self.encoder   = Encoder( input_dim , hidden_size_Encoder , num_Layers_Encoder).to(device)
+        self.decoder   = Decoder(  input_dim , hidden_size_Decoder , num_Layers_Decoder , num_classes).to(device)
+        self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 ).to(device)
         #    hidden_size_Decoder*num_Layers_Decoder*2 )
         self.embedding = embedding
-        self.EOS = EOS_Vector
-        self.BOS = -EOS_Vector
+        self.EOS = EOS_Vector.to(device)
+        self.BOS = -EOS_Vector.to(device)
+
+    def setDevice(self , device):
+        self.device = device
+        self.encoder.setDevice(device)
+        self.decoder.setDevice(device)
+        self.attention = self.attention.to(device)
+        self.EOS = self.EOS.to(self.device)
+        self.BOS = self.BOS.to(self.device)
 
     def forward(self , x , out_max_Len = 150) :
         # h0 = torch.zeros(self.num_Layers*2 , x.size(0) , self.hidden_size )
@@ -222,7 +231,7 @@ class BiLSTM_Attention(nn.Module):
         hidden_State = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )]
         cell_State   = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )]
         print("pré lista de estados")
-        for word in x :
+        for word in x.to(self.device) :
             hidden , cell = self.encoder(word.view(1 , 1 , word.shape[0] ) , hidden_State[-1] , cell_State[-1] )
             hidden_State += [hidden] 
             cell_State += [cell]
@@ -230,12 +239,12 @@ class BiLSTM_Attention(nn.Module):
         
         #DECODER :
         out_seq = []
-        buffer = self.BOS.view(1,1,-1)
+        buffer = self.BOS.view(1,1,-1).to(self.device)
         ctd = 0
         hidden = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder )
         cell   = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder )
 
-        while (buffer  != self.EOS).all() and len(out_seq) < out_max_Len :
+        while (buffer  != self.EOS.to(self.device)).all() and len(out_seq) < out_max_Len :
             # print(buffer.view(1,1,-1).shape)
             
             #ATTENTION :
@@ -257,11 +266,11 @@ class BiLSTM_Attention(nn.Module):
             out        = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
             
             if target != None and rd.random() < force_target_input_rate :
-                word   = self.embedding.index2word[target[ctd]]  
+                word   = self.embedding.itos[target[ctd]]  
             else:
-                word   = self.embedding.index2word[ out[0] ]
+                word   = self.embedding.itos[ out[0] ]
         
-            buffer = torch.from_numpy( self.embedding[ word ] ).float() 
+            buffer = self.embedding[ word ].float().to(self.device) 
             ctd   += 1
             
         
@@ -287,10 +296,10 @@ class BiLSTM_Attention(nn.Module):
                     y = torch.from_numpy(y).float()
                 div = len(y)
                                 
-                out = self.forward_fit(x ,out_max_Len = y.shape[0] ,target = y )
+                out = self.forward_fit(x ,out_max_Len = y.shape[0] ,target = y.to(self.device) )
 
                 print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
-                loss = lossFunction(out , y)/div
+                loss = lossFunction(out , y.to(self.device))/div
                 lossValue += loss.item()
                 print("Pré backward")
                 loss.backward()
