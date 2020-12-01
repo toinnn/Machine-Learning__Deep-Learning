@@ -232,12 +232,12 @@ class BiLSTM_Attention(nn.Module):
         #ENCODER :
         hidden_State = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )]
         cell_State   = [torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )]
-        print("pré lista de estados")
+        # print("pré lista de estados")
         for word in x.to(self.device) :
             hidden , cell = self.encoder(word.view(1 , 1 , word.shape[0] ) , hidden_State[-1] , cell_State[-1] )
             hidden_State += [hidden] 
             cell_State += [cell]
-        print("pós lista de estados")
+        # print("pós lista de estados")
         
         #DECODER :
         out_seq = []
@@ -255,10 +255,10 @@ class BiLSTM_Attention(nn.Module):
             att_hidden  = tuple((self.attention(torch.cat((i.view( -1 ) , hidden.view( -1 ) ) , dim = 0))  for i in hidden_State)) 
             att_cell    = tuple((self.attention(torch.cat((i.view( -1 ) , cell.view( -1 ) ) , dim = 0) )  for i in cell_State ))
             # print(att_hidden[0])
-            print("pré SoftMax")
+            # print("pré SoftMax")
             att_hidden = F.softmax( torch.cat( att_hidden , dim = 0 ) , dim = 0)
             att_cell   = F.softmax( torch.cat( att_cell , dim = 0 ) , dim = 0)
-            print("pos softmax")
+            # print("pos softmax")
             att_hidden  = sum( att_hidden[i]*hidden_State[i]  for i in range(len(hidden_State)))
             att_cell    = sum( att_cell[i]*cell_State[i]  for i in range(len(cell_State)) )
 
@@ -298,7 +298,7 @@ class BiLSTM_Attention(nn.Module):
                     y = torch.from_numpy(y).float()
                 div = len(y)
                                 
-                out = self.forward_fit(x.to(self.device) , out_max_Len = y.shape[0] ,target = y.to(self.device) )
+                out = self.forward_fit(x , out_max_Len = y.shape[0] ,target = y.to(self.device) )
 
                 print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
                 loss = lossFunction(out , y.to(self.device))/div
