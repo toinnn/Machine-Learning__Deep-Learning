@@ -298,7 +298,7 @@ class BiLSTM_Attention(nn.Module):
                     y = torch.from_numpy(y).float()
                 div = len(y)
                                 
-                out = self.forward_fit(x , out_max_Len = y.shape[0] ,target = y.to(self.device) )
+                out = self.forward_fit(x.to(self.device) , out_max_Len = y.shape[0] ,target = y.to(self.device) )
 
                 print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
                 loss = lossFunction(out , y.to(self.device))/div
