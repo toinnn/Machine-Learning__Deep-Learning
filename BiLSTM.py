@@ -261,9 +261,9 @@ class BiLSTM_Attention(nn.Module):
             # print("pré SoftMax")
             att_hidden = F.softmax(  att_hidden , dim = 0)
             # att_cell   = F.softmax( att_cell  , dim = 0)
-            print("pos softmax hidden_State.shape {}".format(hidden_State.shape))
-            print("pos softmax att_hidden.shape {}".format(att_hidden.shape))
-            raise RuntimeError("Só pausando a execução , não tem erro nenhum aqui")
+            # print("pos softmax hidden_State.shape {}".format(hidden_State.shape))
+            # print("pos softmax att_hidden.shape {}".format(att_hidden.shape))
+            # raise RuntimeError("Só pausando a execução , não tem erro nenhum aqui")
             att_hidden  = sum( att_hidden[i]*hidden_State[i]  for i in range(len(hidden_State)))
             # att_cell    = sum( att_cell[i]*cell_State[i]  for i in range(len(cell_State)) )
 
