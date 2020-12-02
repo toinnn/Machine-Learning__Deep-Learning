@@ -238,7 +238,7 @@ class BiLSTM_Attention(nn.Module):
         #     hidden_State += [hidden] 
         #     cell_State += [cell]
         hidden_State , _ = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
-        hidden_State = tuple(hidden_State.permute(1,0,2)[0])
+        hidden_State = hidden_State.permute(1,0,2)[0]
         # print("pós lista de estados")
         
         #DECODER :
@@ -254,9 +254,9 @@ class BiLSTM_Attention(nn.Module):
             #ATTENTION :
             # att_hidden = sum( self.attention(torch.cat((i.view(1 , -1 ) , hidden.view(1 , -1 ) ) , dim = 1) ).view(self.num_Layers_Decoder*2 , 1 ,self.input_dim) for i in hidden_State )
             # att_cell   = sum( self.attention(torch.cat((i.view(1 , -1 ) , cell.view(1 , -1 ) ) , dim = 1) ).view(self.num_Layers_Decoder*2 , 1 ,self.input_dim) for i in cell_State )
-            print("hidden_State.shape = " , hidden_State[0].shape)
+            print("hidden_State.shape = " , hidden_State.shape)
             att_hidden  = self.attention( hidden_State) 
-            att_cell    = self.attention( tuple(cell_State) )
+            att_cell    = self.attention( cell_State )
             # print(att_hidden[0])
             # print("pré SoftMax")
             att_hidden = F.softmax(  att_hidden , dim = 0)
