@@ -271,6 +271,7 @@ class BiLSTM_Attention(nn.Module):
 
             # att_cell    = sum( att_cell[i]*cell_State[i]  for i in range(len(cell_State)) )
 
+            print("att_hidden.shape = " , att_hidden.shape )
             print("cell.shape = " , cell.shape )
             out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , att_hidden , cell) 
             out_seq   += [out]
