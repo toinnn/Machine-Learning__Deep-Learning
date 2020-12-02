@@ -256,19 +256,19 @@ class BiLSTM_Attention(nn.Module):
             # att_cell   = sum( self.attention(torch.cat((i.view(1 , -1 ) , cell.view(1 , -1 ) ) , dim = 1) ).view(self.num_Layers_Decoder*2 , 1 ,self.input_dim) for i in cell_State )
             print("hidden_State.shape = " , hidden_State.shape)
             att_hidden  = self.attention( torch.cat((hidden_State , hidden.view(1 , -1).repeat(hidden_State.shape[0] , 1)) ,dim = 1 ) ) 
-            att_cell    = self.attention( cell_State )
+            # att_cell    = self.attention( torch.cat((cell_State , cell.view(1 , -1).repeat(cell_State.shape[0] , 1)) ,dim = 1 ) ) 
             # print(att_hidden[0])
             # print("pré SoftMax")
             att_hidden = F.softmax(  att_hidden , dim = 0)
-            att_cell   = F.softmax( att_cell  , dim = 0)
+            # att_cell   = F.softmax( att_cell  , dim = 0)
             print("pos softmax hidden_State.shape {}".format(hidden_State.shape))
             print("pos softmax att_hidden.shape {}".format(att_hidden.shape))
             raise RuntimeError("Só pausando a execução , não tem erro nenhum aqui")
             att_hidden  = sum( att_hidden[i]*hidden_State[i]  for i in range(len(hidden_State)))
-            att_cell    = sum( att_cell[i]*cell_State[i]  for i in range(len(cell_State)) )
+            # att_cell    = sum( att_cell[i]*cell_State[i]  for i in range(len(cell_State)) )
 
             
-            out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , att_hidden , att_cell) 
+            out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , att_hidden , cell) 
             out_seq   += [out]
             out        = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
             
