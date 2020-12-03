@@ -273,7 +273,8 @@ class BiLSTM_Attention(nn.Module):
 
             print("att_hidden.shape = " , att_hidden.shape )
             print("cell.shape = " , cell.shape )
-            out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , att_hidden , cell) 
+            # out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , att_hidden , cell)
+            out , (hidden , cell) = self.decoder(buffer.view(buffer.shape[0], 1 ,buffer.shape[1]) , att_hidden , cell) 
             out_seq   += [out]
             out        = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
             
