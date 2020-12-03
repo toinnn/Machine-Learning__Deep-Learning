@@ -245,6 +245,7 @@ class BiLSTM_Attention(nn.Module):
         #DECODER :
         out_seq = []
         buffer = self.BOS.view(1,1,-1).to(self.device)
+        print("self.BOS.shape = " , self.BOS.shape)
         ctd = 0
         hidden = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
         cell   = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
