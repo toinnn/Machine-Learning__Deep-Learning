@@ -1,7 +1,7 @@
 if __name__ == "__main__" :
     from Tener import Tener
     from skip_Gram import skip_gram
-    from BiLSTM import BiLSTM
+    from BiLSTM import BiLSTM , BiLSTM_Attention
     import os 
     import json
     import torch
@@ -78,11 +78,6 @@ if __name__ == "__main__" :
         return classes , [ i if (i !=-1).all() else torch.tensor([len(classes.keys())]) for i in classifiedList  ]
     # -47 : Key não existente ; -127 : separador entre targets diferentes ; -79 : fora do vocab ; 23 : End-Of-Sentence
         
-    # class embedding(torch.nn.Dataset):
-    #     def __init__(self , vectorPath ):
-    #         super(embedding , self ).__init__()
-    #         self.word2vec = Vectors(name = vectorPath)
-    #         self.idx2word = self.word2vec
     
 
     embeddingPath = "EmbeddingBaixados\\Word2Vec_skip_s50\\skip_s50.txt"
@@ -155,12 +150,13 @@ if __name__ == "__main__" :
     # ark_Target = [ json2idx(js , "materias" , wv) for js in ark_Target ]
     # classes , ark_Target = jsonList2classes(ark_Target , "materias")
 
-    # print(ark[0] ,"\n" , ark_Target[0]  )
-    # wv["<EOS>"] = np.ones(50)*-79
+    # ark , arkTest ,ark_Target , ark_TargetTest = ark[0:50] , ark[50:] , ark_Target[0:50] , ark_Target[50:]
     
     # pickle.dump(wv , open("wv_W2Vec.pickle","wb"))
     # pickle.dump(ark , open("ark_W2Vec.pickle","wb"))
     # pickle.dump(ark_Target , open("ark_Target_W2Vec.pickle","wb"))
+    # pickle.dump(arkTest , open("ark_Test_W2Vec.pickle","wb"))
+    # pickle.dump(ark_TargetTest , open("ark_Target_Test_W2Vec.pickle","wb"))
     # pickle.dump(classes , open("classesTarget_Entity_materias_W2Vec.pickle","wb"))
 
     #O Git-Hub não permite que seja upado um arquivo tão grande quanto wv_W2Vec.pickle , então pode descomentar a linha 110 para gerar
@@ -168,14 +164,18 @@ if __name__ == "__main__" :
     wv = pickle.load(open("wv_W2Vec.pickle","rb"))
     ark = pickle.load(open("ark_W2Vec.pickle","rb"))
     ark_Target = pickle.load(open("ark_Target_W2Vec.pickle","rb"))
+    ark_Test = pickle.load(open("ark_Test_W2Vec.pickle","rb"))
     classes = pickle.load(open("classesTarget_Entity_materias_W2Vec.pickle","rb"))
+    #Separando em dataset de teste e de treino 
     
+    print("len(ark) = {}\nlen(ark_Test) = {}".format(len(ark) , len(ark_Test)))
+
     wv = Vectors(name = "EmbeddingBaixados\\Word2Vec_skip_s50\\skip_s50.txt")
     print(wv["oi"])
     # model = Tener(50 , 5 ,5 , 6 , 6 ,wv , np.ones([1,50])*23 ) 
     # model.fit(ark , ark_Target , 10 , 0.005 , n = 0.05 , lossGraphNumber = 1 )
     # pickle.dump(model , open("1_TenerTreinado_maxAge=10_maxErro=0.005_n=0.05.pickle" , "wb"))
-    lstm = BiLSTM(50 ,100 , 1, 100,1 , len(classes.keys()) + 1, wv , torch.ones([1,50])*23 ,torch.device("cuda"))
+    lstm = BiLSTM(50 ,100 , 1, 100,1 , len(classes.keys()) + 1, wv , torch.ones([1,50])*23 ,torch.device("cpu"))
     lstm.fit(ark, ark_Target , 0.05 ,0.06 , 20 )
     # lstm.fit([i.view(1 , i.shape[0] , i.shape[1] ) for i in ark ], ark_Target , 0.05 ,0.06 , 10 )
     # pickle.dump(lstm , open("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/lstm_n=0.05_maxErro=0.06_maxAge=10.pickle","wb"))

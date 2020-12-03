@@ -115,6 +115,10 @@ class BiLSTM(nn.Module):
         buffer = self.BOS.view(1,1,-1).to(self.device)
         ctd = 0
         # teste = (buffer  != self.EOS.to(self.device)).all()
+        print("hidden.shape ",hidden.shape)
+        print("cell.shape ",cell.shape)
+        print("buffer.shape ",buffer.shape)
+
         while (buffer  != self.EOS.to(self.device)).all() and len(out_seq) < out_max_Len :
             # print(buffer.view(1,1,-1).shape)
             
@@ -244,12 +248,12 @@ class BiLSTM_Attention(nn.Module):
         
         #DECODER :
         out_seq = []
-        buffer = self.BOS.view(1,1,-1).to(self.device)
-        print("self.BOS.shape = " , self.BOS.shape)
+        buffer = self.BOS.to(self.device)
+        print("self.BOS.shape = " , buffer.shape )
         ctd = 0
         hidden = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
         cell   = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
-        print("cell.shape = " , cell.shape )
+        # print("cell.shape = " , cell.shape )
         while (buffer  != self.EOS.to(self.device)).all() and len(out_seq) < out_max_Len :
             # print(buffer.view(1,1,-1).shape)
             
@@ -275,7 +279,7 @@ class BiLSTM_Attention(nn.Module):
             print("att_hidden.shape = " , att_hidden.shape )
             print("cell.shape = " , cell.shape )
             # out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , att_hidden , cell)
-            out , (hidden , cell) = self.decoder(buffer.view(buffer.shape[0], 1 ,buffer.shape[1]) , att_hidden , cell) 
+            out , (hidden , cell) = self.decoder(buffer.view(1, 1 ,-1) , att_hidden , cell) 
             out_seq   += [out]
             out        = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
             
