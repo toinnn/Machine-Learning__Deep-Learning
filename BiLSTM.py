@@ -243,13 +243,15 @@ class BiLSTM_Attention(nn.Module):
         #     cell_State += [cell]
         hidden_State , _ = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
         # hidden_State = hidden_State.permute(1,0,2)[0]
+        # print("hidden_State.shape ",hidden_State.shape)
+        # print("hidden_State.permute(1,0,2)[0].shape {}\nhidden_State[0].shape {}".format(hidden_State.permute(1,0,2)[0].shape , hidden_State[0].shape))
         hidden_State = hidden_State[0]
         # print("pós lista de estados")
-        
+
         #DECODER :
         out_seq = []
         buffer = self.BOS.to(self.device)
-        print("self.BOS.shape = " , buffer.shape )
+        # print("self.BOS.shape = " , buffer.shape )
         ctd = 0
         hidden = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
         cell   = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
@@ -266,20 +268,24 @@ class BiLSTM_Attention(nn.Module):
             # print(att_hidden[0])
             # print("pré SoftMax")
             att_hidden = F.softmax(  att_hidden , dim = 0)
+            
             # att_cell   = F.softmax( att_cell  , dim = 0)
             # print("pos softmax hidden_State.shape {}".format(hidden_State.shape))
             # print("pos softmax att_hidden.shape {}".format(att_hidden.shape))
             # raise RuntimeError("Só pausando a execução , não tem erro nenhum aqui")
-            
-            att_hidden  = sum( att_hidden[i]*hidden_State[i]  for i in range(len(hidden_State)))
-            #torch.einsum("i,ij->j",(att,hidden)) 
+            # print("Pré attention att_hidden.shape = " , att_hidden.shape )
+
+            # att_hidden  = sum( att_hidden[i]*hidden_State[i]  for i in range(len(hidden_State)))
+            att_hidden = torch.einsum("ik,ij->j",(att_hidden,hidden_State)) 
 
             # att_cell    = sum( att_cell[i]*cell_State[i]  for i in range(len(cell_State)) )
 
-            print("att_hidden.shape = " , att_hidden.shape )
-            print("cell.shape = " , cell.shape )
+            # print("Pós attention att_hidden.shape = " , att_hidden.shape )
+            # print("cell.shape = " , cell.shape )
+            # print( att_hidden[0] )
+            # raise RuntimeError("Pausa rápida")
             # out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , att_hidden , cell)
-            out , (hidden , cell) = self.decoder(buffer.view(1, 1 ,-1) , att_hidden , cell) 
+            out , (hidden , cell) = self.decoder(buffer.view(1, 1 ,-1) , att_hidden.view(cell.shape[0],cell.shape[1],cell.shape[2]) , cell) 
             out_seq   += [out]
             out        = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
             
