@@ -184,7 +184,8 @@ class BiLSTM(nn.Module):
 
 class BiLSTM_Attention(nn.Module):
     def __init__(self , input_dim , hidden_size_Encoder , num_Layers_Encoder ,
-            hidden_size_Decoder , num_Layers_Decoder , num_classes , embedding , EOS_Vector ,device = torch.device("cpu") ):
+            hidden_size_Decoder , num_Layers_Decoder , num_classes , embedding , EOS_Vector ,device = torch.device("cpu"),
+            attention_Shape = None ):
         super(BiLSTM_Attention, self).__init__()
         
         self.input_dim   = input_dim
@@ -193,10 +194,15 @@ class BiLSTM_Attention(nn.Module):
         self.num_Layers_Encoder  = num_Layers_Encoder
         self.hidden_size_Decoder = hidden_size_Decoder
         self.num_Layers_Decoder  = num_Layers_Decoder
+        self.attention_Shape     = None if attention_Shape == None else [input_dim] + list(attention_Shape) + [1]
 
         self.encoder   = Encoder( input_dim , hidden_size_Encoder , num_Layers_Encoder , device )
         self.decoder   = Decoder(  input_dim , hidden_size_Decoder , num_Layers_Decoder , num_classes , device)
-        self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 ).to(device)
+        
+        if attention_Shape == None :
+            self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 ).to(device)
+        else :
+            self.attention = nn.Sequential(*[nn.Linear(attention_Shape[i-1],attention_Shape[i]).to(device) for i in range(1,len(attention_Shape))])
         #    hidden_size_Decoder*num_Layers_Decoder*2 )
         self.device = device
 
@@ -344,3 +350,16 @@ class BiLSTM_Attention(nn.Module):
             plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_ATTENTON_LossInTrain_Plot.pdf")
         plt.show()
 
+# class attention_Layer(nn.Module):
+#     def __init__(self , shape , device = torch.device("cpu")):
+#         super(attention_Layer , self ).__init__()
+#         self.layer = nn.ModuleList([nn.Linear(shape[i-1],shape[i]).to(device) for i in range(1,len(shape))])
+#         self.device = device
+#     def set_Device(self , device):
+#         for i in range(len(self.layer)) :
+#             self.layer[i] = self.layer[i].to(device)
+#         self.device = device
+#     def forward(self , x ):
+#         for i in self.layer :
+#             x = i(x)
+#         return x
