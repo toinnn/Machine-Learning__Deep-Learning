@@ -194,7 +194,7 @@ class BiLSTM_Attention(nn.Module):
         self.num_Layers_Encoder  = num_Layers_Encoder
         self.hidden_size_Decoder = hidden_size_Decoder
         self.num_Layers_Decoder  = num_Layers_Decoder
-        self.attention_Shape     = None if attention_Shape == None else [input_dim] + list(attention_Shape) + [1]
+        self.attention_Shape     = None if attention_Shape == None else [2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder] + list(attention_Shape) + [1]
 
         self.encoder   = Encoder( input_dim , hidden_size_Encoder , num_Layers_Encoder , device )
         self.decoder   = Decoder(  input_dim , hidden_size_Decoder , num_Layers_Decoder , num_classes , device)
