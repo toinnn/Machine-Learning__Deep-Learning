@@ -200,8 +200,10 @@ class BiLSTM(nn.Module):
                         x = torch.from_numpy(x).float()
                         y = torch.from_numpy(y).float()
 
-                    _ , out = self.forward(x.to(self.device) , out_max_Len = out_max_Len )
-                    diff += diff_Rate(out , y.to(self.device) )
+                    # _ , out = self.forward(x.to(self.device) , out_max_Len = y.shape[0] )
+                    out = self.forward_fit(x.to(self.device) , out_max_Len = y.shape[0] )
+                    # diff += diff_Rate(out , y.to(self.device) )
+                    diff += lossFunction(out , y.to(self.device))/len(y)
                 lossTestList += [diff/div]
                 if  lossTestList[-1] < bestLossValue :
                     print("Novo melhor")
