@@ -10,7 +10,7 @@ def diff_Rate(a,b):
     smallerSize = min(len(a) , len(b))
     correct = 0
     for i in range(smallerSize):
-        print("a[i] {}\nb[i] {}".format(a[i] , b[i]))
+        print("a[i] {} -- b[i] {}".format(a[i] , b[i]))
         # for j in 
         if a[i]==b[i] :
             correct += 1 
