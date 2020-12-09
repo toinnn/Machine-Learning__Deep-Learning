@@ -223,7 +223,7 @@ class BiLSTM(nn.Module):
             plt.xlabel("Ages" , fontsize = 14)
 
             testLossPlot = plt.subplot(2,1,2)
-            trainLossPlot.plot(range(1 , Age + 1) , lossTestList )
+            testLossPlot.plot(range(1 , Age + 1) , lossTestList )
             plt.ylabel("Test Percent Loss" , fontsize = 14 )
             plt.xlabel("Ages" , fontsize = 14)
         else :
