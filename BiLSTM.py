@@ -15,7 +15,7 @@ def diff_Rate(a,b):
         if a[i]==b[i] :
             correct += 1 
     biggerSize = max(len(a) , len(b))
-    return correct/biggerSize 
+    return 1 - correct/biggerSize 
 
 class Encoder(nn.Module):
     def __init__(self , input_dim , hidden_size , num_Layers , device = torch.device("cpu") ):
