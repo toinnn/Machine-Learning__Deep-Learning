@@ -194,8 +194,8 @@ class BiLSTM(nn.Module):
                 ctd += 1
             if test_Input_Batch != None and test_Target_Batch != None  :
                 diff = 0
-                div = min( len(input_Batch) , len(target_Batch) )
-                for x,y in zip(input_Batch , target_Batch ) :
+                div = min( len(test_Input_Batch) , len(test_Input_Batch) )
+                for x,y in zip(test_Input_Batch , test_Input_Batch ) :
                     if type(y) != type(torch.tensor([1])) :
                         x = torch.from_numpy(x).float()
                         y = torch.from_numpy(y).float()
