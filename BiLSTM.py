@@ -207,8 +207,8 @@ class BiLSTM(nn.Module):
                 lossTestList += [diff/div]
                 if  lossTestList[-1] < bestLossValue :
                     print("Novo melhor")
-                    best_Encoder  =  cp.deepcopy(self.encoder._parameters)
-                    best_Decoder  =  cp.deepcopy(self.decoder._parameters)
+                    best_Encoder  =  self.encoder._parameters
+                    best_Decoder  =  self.decoder._parameters
                     bestLossValue =  lossTestList[-1]
                     print("Saiu do Melhor")
 
