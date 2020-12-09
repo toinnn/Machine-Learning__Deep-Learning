@@ -203,7 +203,7 @@ class BiLSTM(nn.Module):
                     # _ , out = self.forward(x.to(self.device) , out_max_Len = y.shape[0] )
                     out = self.forward_fit(x , out_max_Len = y.shape[0] )
                     # diff += diff_Rate(out , y.to(self.device) )
-                    # diff += lossFunction(out , y.to(self.device))/len(y)
+                    diff += lossFunction(out , y.to(self.device)).item()
                     # optimizer.zero_grad()
                 lossTestList += [diff/div]
                 if  lossTestList[-1] < bestLossValue :
