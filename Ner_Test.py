@@ -181,7 +181,7 @@ if __name__ == "__main__" :
     # model = Tener(50 , 5 ,5 , 6 , 6 ,wv , np.ones([1,50])*23 ) 
     # model.fit(ark , ark_Target , 10 , 0.005 , n = 0.05 , lossGraphNumber = 1 )
     # pickle.dump(model , open("1_TenerTreinado_maxAge=10_maxErro=0.005_n=0.05.pickle" , "wb"))
-    # lstm = BiLSTM(50 ,100 , 1, 100,1 , len(classes.keys()) + 2, wv , wv.vectors[len(classes.keys()) + 2] ,
+    # lstm = BiLSTM(50 ,100 , 1, 100,1 , len(classes.keys()) + 2, wv , wv.vectors[len(classes.keys()) + 1] ,
     #     torch.device("cpu"))
     # lstm.fit(ark, ark_Target , 0.05 ,0.06 , 20 , test_Input_Batch = ark_Test , test_Target_Batch = ark_TargetTest , out_max_Len = 30 )
     # lstm.fit([i.view(1 , i.shape[0] , i.shape[1] ) for i in ark ], ark_Target , 0.05 ,0.06 , 10 )
