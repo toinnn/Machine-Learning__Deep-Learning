@@ -207,8 +207,8 @@ class BiLSTM(nn.Module):
                 lossTestList += [diff/div]
                 if  lossTestList[-1] < bestLossValue :
                     print("Novo melhor")
-                    best_Encoder  =  cp.deepcopy(self.encoder)
-                    best_Decoder  =  cp.deepcopy(self.decoder)
+                    best_Encoder  =  cp.deepcopy(self.encoder._parameters)
+                    best_Decoder  =  cp.deepcopy(self.decoder._parameters)
                     bestLossValue =  lossTestList[-1]
                     print("Saiu do Melhor")
 
@@ -217,8 +217,8 @@ class BiLSTM(nn.Module):
             lossList.append(lossValue)
         
         if test_Input_Batch != None and test_Target_Batch != None  :
-            self.encoder = cp.deepcopy(best_Encoder)
-            self.decoder = cp.deepcopy(best_Decoder)
+            self.encoder._parameters = cp.deepcopy(best_Encoder)
+            self.decoder._parameters = cp.deepcopy(best_Decoder)
         
             trainLossPlot = plt.subplot(2,1,1)
             trainLossPlot.plot(range(1 , Age + 1) , lossList)
