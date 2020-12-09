@@ -109,8 +109,8 @@ class BiLSTM(nn.Module):
         while (buffer  != self.EOS.to(self.device)).all() and len(seq) < out_max_Len :
             
             out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , hidden , cell) 
-            print(out)
-            out        = heapq.nlargest( 1 , enumerate( out ) , key = lambda x : x[1] )[0]
+            print(out[0])
+            out        = heapq.nlargest( 1 , enumerate( out[0] ) , key = lambda x : x[1] )[0]
 
             
             word   = self.embedding.itos[ out[0] ]
@@ -148,7 +148,7 @@ class BiLSTM(nn.Module):
             
             out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , hidden , cell) 
             out_seq   += [out]
-            out        = heapq.nlargest(1, enumerate( out ) , key = lambda x : x[1])[0]
+            out        = heapq.nlargest(1, enumerate( out[0] ) , key = lambda x : x[1])[0]
             
             if target != None and rd.random() < force_target_input_rate :
                 word   = self.embedding.itos[target[ctd]]  
