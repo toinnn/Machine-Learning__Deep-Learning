@@ -109,9 +109,10 @@ class BiLSTM(nn.Module):
         while (buffer  != self.EOS.to(self.device)).all() and len(seq) < out_max_Len :
             
             out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , hidden , cell) 
+            print(out)
             out        = heapq.nlargest( 1 , enumerate( out ) , key = lambda x : x[1] )[0]
 
-            print(out)
+            
             word   = self.embedding.itos[ out[0] ]
             buffer = self.embedding[ word ].float().to(self.device)
 
