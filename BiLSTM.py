@@ -133,9 +133,9 @@ class BiLSTM(nn.Module):
         buffer = self.BOS.view(1,1,-1).to(self.device)
         ctd = 0
         # teste = (buffer  != self.EOS.to(self.device)).all()
-        print("hidden.shape ",hidden.shape)
-        print("cell.shape ",cell.shape)
-        print("buffer.shape ",buffer.shape)
+        # print("hidden.shape ",hidden.shape)
+        # print("cell.shape ",cell.shape)
+        # print("buffer.shape ",buffer.shape)
 
         while (buffer  != self.EOS.to(self.device)).all() and len(out_seq) < out_max_Len :
             # print(buffer.view(1,1,-1).shape)
@@ -203,9 +203,11 @@ class BiLSTM(nn.Module):
                     diff += diff_Rate(out , y.to(self.device) )
                 lossTestList += [diff/div]
                 if  lossTestList[-1] < bestLossValue :
+                    print("Novo melhor")
                     best_Encoder  =  cp.deepcopy(self.encoder)
                     best_Decoder  =  cp.deepcopy(self.decoder)
                     bestLossValue =  lossTestList[-1]
+                    print("Saiu do Melhor")
 
             Age += 1
             lossValue = lossValue/len(target_Batch)

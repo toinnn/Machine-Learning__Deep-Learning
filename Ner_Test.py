@@ -85,10 +85,10 @@ if __name__ == "__main__" :
     outputPath = "leNer-Dataset\\Json-Ner\\"
 
     # ark_Input  = [inputPath + ark  for ark in os.listdir(inputPath)]
-    ark_Output = [outputPath + ark for ark in os.listdir(outputPath)]
+    # ark_Output = [outputPath + ark for ark in os.listdir(outputPath)]
 
     # ark = [open( i , "r" , encoding = "utf8").read() for i in ark_Input ]
-    ark_Target = [json.load(open(i , "rb")) for i in ark_Output]
+    # ark_Target = [json.load(open(i , "rb")) for i in ark_Output]
     
 
     # embedding = vocab.Vectors(name = embeddingPath )
@@ -148,17 +148,17 @@ if __name__ == "__main__" :
     
     # ark        = [ sen2vec(wv , i , 50 ) for i in ark ]
     # ark_Target = [ json2idx(js , "materias" , wv) for js in ark_Target ]
-    classes , ark_Target = jsonList2classes(ark_Target , "materias")
-    ark_Target = [torch.cat((i, torch.tensor([len(classes.keys()) + 1]) ) , dim = 0 ) for i in ark_Target ]
+    # classes , ark_Target = jsonList2classes(ark_Target , "materias")
+    # ark_Target = [torch.cat((i, torch.tensor([len(classes.keys()) + 1]) ) , dim = 0 ) for i in ark_Target ]
 
     # ark , arkTest  = ark[0:50] , ark[50:] 
-    ark_Target , ark_TargetTest = ark_Target[0:50] , ark_Target[50:]
+    # ark_Target , ark_TargetTest = ark_Target[0:50] , ark_Target[50:]
 
     # pickle.dump(wv , open("wv_W2Vec.pickle","wb"))
     # pickle.dump(ark , open("ark_W2Vec.pickle","wb"))
-    pickle.dump(ark_Target , open("ark_Target_W2Vec.pickle","wb"))
+    # pickle.dump(ark_Target , open("ark_Target_W2Vec.pickle","wb"))
     # pickle.dump(arkTest , open("ark_Test_W2Vec.pickle","wb"))
-    pickle.dump(ark_TargetTest , open("ark_Target_Test_W2Vec.pickle","wb"))
+    # pickle.dump(ark_TargetTest , open("ark_Target_Test_W2Vec.pickle","wb"))
     # pickle.dump(classes , open("classesTarget_Entity_materias_W2Vec.pickle","wb"))
 
     #O Git-Hub não permite que seja upado um arquivo tão grande quanto wv_W2Vec.pickle , então pode descomentar a linha 110 para gerar
@@ -173,14 +173,14 @@ if __name__ == "__main__" :
     
     print("len(ark) = {}\nlen(ark_Test) = {}".format(len(ark) , len(ark_Test)))
     # print(ark_Target)
-    # print(classes)
+    print(len(classes.keys())+1 )
 
     wv = Vectors(name = "EmbeddingBaixados\\Word2Vec_skip_s50\\skip_s50.txt")
     # print(wv["oi"])
     # model = Tener(50 , 5 ,5 , 6 , 6 ,wv , np.ones([1,50])*23 ) 
     # model.fit(ark , ark_Target , 10 , 0.005 , n = 0.05 , lossGraphNumber = 1 )
     # pickle.dump(model , open("1_TenerTreinado_maxAge=10_maxErro=0.005_n=0.05.pickle" , "wb"))
-    lstm = BiLSTM(50 ,100 , 1, 100,1 , len(classes.keys()) + 1, wv , wv.vectors[len(classes.keys()) + 1] ,
+    lstm = BiLSTM(50 ,100 , 1, 100,1 , len(classes.keys()) + 2, wv , wv.vectors[len(classes.keys()) + 2] ,
         torch.device("cuda"))
     lstm.fit(ark, ark_Target , 0.05 ,0.06 , 20 , test_Input_Batch = ark_Test , test_Target_Batch = ark_TargetTest , out_max_Len = 30 )
     # lstm.fit([i.view(1 , i.shape[0] , i.shape[1] ) for i in ark ], ark_Target , 0.05 ,0.06 , 10 )
