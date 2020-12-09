@@ -201,7 +201,7 @@ class BiLSTM(nn.Module):
                         y = torch.from_numpy(y).float()
 
                     # _ , out = self.forward(x.to(self.device) , out_max_Len = y.shape[0] )
-                    out = self.forward_fit(x.to(self.device) , out_max_Len = y.shape[0] )
+                    out = self.forward_fit(x , out_max_Len = y.shape[0] )
                     # diff += diff_Rate(out , y.to(self.device) )
                     diff += lossFunction(out , y.to(self.device))/len(y)
                 lossTestList += [diff/div]
