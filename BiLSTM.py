@@ -142,7 +142,7 @@ class BiLSTM(nn.Module):
         # print("cell.shape ",cell.shape)
         # print("buffer.shape ",buffer.shape)
         
-        #(buffer  != self.EOS.to(self.device)).all() and
+        #(buffer  != self.EOS.to(self.device)).all() and 
         while  len(out_seq) < out_max_Len :
             # print(buffer.view(1,1,-1).shape)
             
