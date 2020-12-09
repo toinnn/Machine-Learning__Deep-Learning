@@ -10,6 +10,7 @@ def diff_Rate(a,b):
     smallerSize = min(len(a) , len(b))
     correct = 0
     for i in range(smallerSize):
+        print("a[i] {}\nb[i] {}".format(a[i] , b[i]))
         if a[i]==b[i] :
             correct += 1 
     biggerSize = max(len(a) , len(b))
@@ -195,15 +196,15 @@ class BiLSTM(nn.Module):
             if test_Input_Batch != None and test_Target_Batch != None  :
                 diff = 0
                 div = min( len(test_Input_Batch) , len(test_Input_Batch) )
-                for x,y in zip(test_Input_Batch , test_Input_Batch ) :
+                for x,y in zip( test_Input_Batch , test_Input_Batch ) :
                     if type(y) != type(torch.tensor([1])) :
                         x = torch.from_numpy(x).float()
                         y = torch.from_numpy(y).float()
 
                     # _ , out = self.forward(x.to(self.device) , out_max_Len = y.shape[0] )
                     out = self.forward_fit(x , out_max_Len = y.shape[0] )
-                    # diff += diff_Rate(out , y.to(self.device) )
-                    diff += lossFunction(out , y.to(self.device)).item()
+                    diff += diff_Rate(out , y.to(self.device) )
+                    # diff += lossFunction(out , y.to(self.device)).item()
                     # optimizer.zero_grad()
                 lossTestList += [diff/div]
                 if  lossTestList[-1] < bestLossValue :
