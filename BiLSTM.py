@@ -4,7 +4,15 @@ import torch.nn.functional as F
 import heapq
 import random as rd
 from matplotlib import pyplot as plt
+import copy as cp
 print("teste")
+def diff_Rate(a,b):
+    smallerSize = min(len(a) , len(b))
+    correct = 0
+    for i in range(smallerSize):
+        correct += 1 if a[i]==b[i] else 0
+    biggerSize = max(len(a) , len(b))
+    return 1 - correct/(biggerSize) 
 
 class Encoder(nn.Module):
     def __init__(self , input_dim , hidden_size , num_Layers , device = torch.device("cpu") ):
@@ -83,22 +91,32 @@ class BiLSTM(nn.Module):
         self.BOS = self.BOS.to(self.device)
 
     def forward(self , x , out_max_Len = 150) :
+        #ENCODER :
         hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
         cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
         
-        _ , (hidden_State , cell_State) = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
-
-        seq = []
-        buffer = self.BOS.to(device)
-        while (buffer != self.EOS).all() and seq.shape[0] < out_max_Len :
-            out , hidden_State , cell_State = self.decoder(buffer , hidden_State , cell_State )
-            out    = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
-            word   = self.embedding.itos[ out[0] ]
-            buffer = self.embedding[ word ].to(self.device).float()
-            seq   += [word]
+        _ , (hidden , cell) = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
         
-        return seq
-        return self.linear(x[ : , -1 , : ])
+
+        #DECODER :
+        seq = []
+        out_class_Seq = []
+        buffer = self.BOS.view(1,1,-1).to(self.device)
+        ctd = 0
+        while (buffer  != self.EOS.to(self.device)).all() and len(seq) < out_max_Len :
+            
+            out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , hidden , cell) 
+            out        = heapq.nlargest( 1 , enumerate( buffer ) , key = lambda x : x[1] )[0]
+
+            word   = self.embedding.itos[ out[0] ]
+            buffer = self.embedding[ word ].float().to(self.device)
+
+            seq           += [word] 
+            out_class_Seq += [out[0]]
+            ctd   += 1
+            
+        return seq , torch.tensor(out_class_Seq).to(self.device)
+        # return self.linear(x[ : , -1 , : ])
 
     def forward_fit(self , x , out_max_Len = 150 ,target = None , force_target_input_rate = 0.5) :
         
@@ -139,14 +157,18 @@ class BiLSTM(nn.Module):
         return torch.cat(out_seq , dim =0 )
     
 
-    def fit(self , input_Batch , target_Batch , n , maxErro , maxAge = 1 , lossFunction = nn.CrossEntropyLoss() ,
-            lossGraphNumber = 1) :
+    def fit(self , input_Batch , target_Batch , n , maxErro , maxAge = 1  , lossFunction = nn.CrossEntropyLoss() ,
+            lossGraphNumber = 1 , test_Input_Batch = None , test_Target_Batch = None , out_max_Len = 150  ) :
 
         optimizer = torch.optim.Adam(self.parameters(), n )
         lossValue = float("inf")
         Age = 0
         lossList = []
-        # input_Batch = [i.view(1 , i.shape[0] , i.shape[1] ) for i in input_Batch ]
+        bestLossValue = float("inf")
+        # input_Batch = [i.view(1 , i.shape[0] , i.shape[1] ) for i in input_Batch ]    
+
+        if test_Input_Batch != None and test_Target_Batch != None :
+            lossTestList = []
 
         while lossValue > maxErro and Age < maxAge :
             lossValue = 0
@@ -169,11 +191,45 @@ class BiLSTM(nn.Module):
                 optimizer.step()
                 optimizer.zero_grad()
                 ctd += 1
+            if test_Input_Batch != None and test_Target_Batch != None  :
+                diff = 0
+                div = min( len(input_Batch) , len(target_Batch) )
+                for x,y in zip(input_Batch , target_Batch ) :
+                    if type(y) != type(torch.tensor([1])) :
+                        x = torch.from_numpy(x).float()
+                        y = torch.from_numpy(y).float()
+
+                    _ , out = self.forward(x.to(self.device) , out_max_Len = out_max_Len )
+                    diff += diff_Rate(out , y.to(self.device) )
+                lossTestList += [diff/div]
+                if  lossTestList[-1] < bestLossValue :
+                    best_Encoder  =  cp.deepcopy(self.encoder)
+                    best_Decoder  =  cp.deepcopy(self.decoder)
+                    bestLossValue =  lossTestList[-1]
+
             Age += 1
             lossValue = lossValue/len(target_Batch)
             lossList.append(lossValue)
         
-        plt.plot(range(1 , Age + 1) , lossList)
+        if test_Input_Batch != None and test_Target_Batch != None  :
+            self.encoder = cp.deepcopy(best_Encoder)
+            self.decoder = cp.deepcopy(best_Decoder)
+        
+            trainLossPlot = plt.subplot(2,1,1)
+            trainLossPlot.plot(range(1 , Age + 1) , lossList)
+            plt.ylabel("Loss in Train" , fontsize = 14 )
+            plt.xlabel("Ages" , fontsize = 14)
+
+            testLossPlot = plt.subplot(2,1,2)
+            trainLossPlot.plot(range(1 , Age + 1) , lossTestList )
+            plt.ylabel("Test Percent Loss" , fontsize = 14 )
+            plt.xlabel("Ages" , fontsize = 14)
+        else :
+            trainLossPlot = plt.subplot(1 , 1 , 1)
+            trainLossPlot.plot(range(1 , Age + 1) , lossList)
+            plt.ylabel("Loss in Train" , fontsize = 14 )
+            plt.xlabel("Ages" , fontsize = 14)
+
         if lossGraphNumber != 1 :
             plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_LossInTrain_Plot.png".format(lossGraphNumber) )
             plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_LossInTrain_Plot.pdf".format(lossGraphNumber) )
