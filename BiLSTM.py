@@ -111,6 +111,7 @@ class BiLSTM(nn.Module):
             out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , hidden , cell) 
             out        = heapq.nlargest( 1 , enumerate( buffer ) , key = lambda x : x[1] )[0]
 
+            print(out)
             word   = self.embedding.itos[ out[0] ]
             buffer = self.embedding[ word ].float().to(self.device)
 
