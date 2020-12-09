@@ -11,6 +11,7 @@ def diff_Rate(a,b):
     correct = 0
     for i in range(smallerSize):
         print("a[i] {}\nb[i] {}".format(a[i] , b[i]))
+        # for j in 
         if a[i]==b[i] :
             correct += 1 
     biggerSize = max(len(a) , len(b))
@@ -195,22 +196,22 @@ class BiLSTM(nn.Module):
                 ctd += 1
             if test_Input_Batch != None and test_Target_Batch != None  :
                 diff = 0
-                div = min( len(test_Input_Batch) , len(test_Input_Batch) )
-                for x,y in zip( test_Input_Batch , test_Input_Batch ) :
+                div = min( len(test_Input_Batch) , len(test_Target_Batch) )
+                for x,y in zip( test_Input_Batch , test_Target_Batch ) :
                     if type(y) != type(torch.tensor([1])) :
                         x = torch.from_numpy(x).float()
                         y = torch.from_numpy(y).float()
 
-                    # _ , out = self.forward(x.to(self.device) , out_max_Len = y.shape[0] )
-                    out = self.forward_fit(x , out_max_Len = y.shape[0] )
+                    _ , out = self.forward(x.to(self.device) , out_max_Len = y.shape[0] )
+                    # out = self.forward_fit(x , out_max_Len = y.shape[0] )
                     diff += diff_Rate(out , y.to(self.device) )
                     # diff += lossFunction(out , y.to(self.device)).item()
                     # optimizer.zero_grad()
                 lossTestList += [diff/div]
                 if  lossTestList[-1] < bestLossValue :
                     print("Novo melhor")
-                    best_Encoder  =  self.encoder._parameters
-                    best_Decoder  =  self.decoder._parameters
+                    best_Encoder  =  cp.deepcopy(self.encoder)
+                    best_Decoder  =  cp.deepcopy(self.decoder)
                     bestLossValue =  lossTestList[-1]
                     print("Saiu do Melhor")
 
@@ -219,8 +220,8 @@ class BiLSTM(nn.Module):
             lossList.append(lossValue)
         
         if test_Input_Batch != None and test_Target_Batch != None  :
-            self.encoder._parameters = cp.deepcopy(best_Encoder)
-            self.decoder._parameters = cp.deepcopy(best_Decoder)
+            self.encoder = cp.deepcopy(best_Encoder)
+            self.decoder = cp.deepcopy(best_Decoder)
         
             trainLossPlot = plt.subplot(2,1,1)
             trainLossPlot.plot(range(1 , Age + 1) , lossList)
