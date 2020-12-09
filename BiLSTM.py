@@ -204,7 +204,7 @@ class BiLSTM(nn.Module):
                         x = torch.from_numpy(x).float()
                         y = torch.from_numpy(y).float()
 
-                    _ , out = self.forward(x.to(self.device) , out_max_Len = y.shape[0] )
+                    _ , out = self.forward(x.to(self.device) , out_max_Len = out_max_Len )
                     # out = self.forward_fit(x , out_max_Len = y.shape[0] )
                     diff += diff_Rate(out , y.to(self.device) )
                     # diff += lossFunction(out , y.to(self.device)).item()
@@ -222,6 +222,7 @@ class BiLSTM(nn.Module):
             lossList.append(lossValue)
         
         if test_Input_Batch != None and test_Target_Batch != None  :
+            print("O melhor resultado de teste foi " , bestLossValue )
             self.encoder = cp.deepcopy(best_Encoder)
             self.decoder = cp.deepcopy(best_Decoder)
         
