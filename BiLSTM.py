@@ -109,7 +109,7 @@ class BiLSTM(nn.Module):
         while (buffer  != self.EOS.to(self.device)).all() and len(seq) < out_max_Len :
             
             out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , hidden , cell) 
-            print(out[0])
+            # print(out[0])
             out        = heapq.nlargest( 1 , enumerate( out[0] ) , key = lambda x : x[1] )[0]
 
             
@@ -206,10 +206,8 @@ class BiLSTM(nn.Module):
                         y = torch.from_numpy(y).float()
 
                     _ , out = self.forward(x.to(self.device) , out_max_Len = out_max_Len )
-                    # out = self.forward_fit(x , out_max_Len = y.shape[0] )
                     diff += diff_Rate(out , y.to(self.device) )
-                    # diff += lossFunction(out , y.to(self.device)).item()
-                    # optimizer.zero_grad()
+                    
                 lossTestList += [diff/div]
                 if  lossTestList[-1] < bestLossValue :
                     print("Novo melhor")
@@ -287,22 +285,43 @@ class BiLSTM_Attention(nn.Module):
         self.BOS = self.BOS.to(self.device)
 
     def forward(self , x , out_max_Len = 150) :
-        # h0 = torch.zeros(self.num_Layers*2 , x.size(0) , self.hidden_size )
-        # c0 = torch.zeros(self.num_Layers*2 , x.size(0) , self.hidden_size )
-        
-        hidden_State , cell_State = self.encoder(x)
+        #ENCODER :
+        hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
+        cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
 
-        seq = []
-        buffer = self.BOS
-        while (buffer != self.EOS).all() and seq.shape[0] < out_max_Len :
-            out , hidden_State , cell_State = self.decoder(buffer , hidden_State , cell_State)
-            out    = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
-            word   = self.embedding.index2word[ out[0] ]
-            buffer = torch.from_numpy( self.embedding[ word ] ).float()
-            seq   += [word]
-        
-        return seq
-        return self.linear(x[ : , -1 , : ])
+        hidden_State , _ = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
+
+        hidden_State = hidden_State[0]
+
+
+        #DECODER :
+        out_class_Seq = []
+        buffer = self.BOS.to(self.device)
+
+        ctd    = 0
+        hidden = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
+        cell   = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
+
+        while (buffer  != self.EOS.to(self.device)).all() and len(out_seq) < out_max_Len :
+            #ATTENTION :
+            att_hidden  = self.attention( torch.cat((hidden_State , hidden.view(1 , -1).repeat(hidden_State.shape[0] , 1)) ,dim = 1 ) ) 
+            att_hidden  = F.softmax(  att_hidden , dim = 0)
+            att_hidden  = torch.einsum("ik,ij->j",(att_hidden,hidden_State))
+
+
+            out , (hidden , cell) = self.decoder(buffer.view(1, 1 ,-1) , att_hidden.view(cell.shape[0],cell.shape[1],cell.shape[2]) , cell) 
+            
+            out            = heapq.nlargest(1, enumerate( out[0] ) , key = lambda x : x[1])[0]
+            
+
+            word   = self.embedding.itos[ out[0] ]
+            buffer = self.embedding[ word ].float().to(self.device)
+
+            seq           += [word] 
+            out_class_Seq += [out[0]]
+            ctd   += 1
+            
+        return seq , torch.tensor(out_class_Seq).to(self.device)
 
     def forward_fit(self , x , out_max_Len = 150 ,target = None , force_target_input_rate = 0.5) :
         
@@ -330,7 +349,8 @@ class BiLSTM_Attention(nn.Module):
         hidden = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
         cell   = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
         # print("cell.shape = " , cell.shape )
-        while (buffer  != self.EOS.to(self.device)).all() and len(out_seq) < out_max_Len :
+        # (buffer  != self.EOS.to(self.device)).all() and 
+        while len(out_seq) < out_max_Len :
             # print(buffer.view(1,1,-1).shape)
             
             #ATTENTION :
@@ -361,7 +381,7 @@ class BiLSTM_Attention(nn.Module):
             # out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , att_hidden , cell)
             out , (hidden , cell) = self.decoder(buffer.view(1, 1 ,-1) , att_hidden.view(cell.shape[0],cell.shape[1],cell.shape[2]) , cell) 
             out_seq   += [out]
-            out        = heapq.nlargest(1, enumerate( buffer ) , key = lambda x : x[1])[0]
+            out        = heapq.nlargest(1, enumerate( out[0] ) , key = lambda x : x[1])[0]
             
             if target != None and rd.random() < force_target_input_rate :
                 word   = self.embedding.itos[target[ctd]]  
@@ -376,13 +396,17 @@ class BiLSTM_Attention(nn.Module):
     
 
     def fit(self , input_Batch , target_Batch , n , maxErro , maxAge = 1 , lossFunction = nn.CrossEntropyLoss() ,
-            lossGraphNumber = 1) :
+            lossGraphNumber = 1 , test_Input_Batch = None , test_Target_Batch = None , out_max_Len = 150) :
 
         optimizer = torch.optim.Adam(self.parameters(), n )
         lossValue = float("inf")
         Age = 0
         lossList = []
-        # input_Batch = [i.view(1 , i.shape[0] , i.shape[1] ) for i in input_Batch ]
+        bestLossValue = float("inf")
+        # input_Batch = [i.view(1 , i.shape[0] , i.shape[1] ) for i in input_Batch ]    
+
+        if test_Input_Batch != None and test_Target_Batch != None :
+            lossTestList = []
 
         while lossValue > maxErro and Age < maxAge :
             lossValue = 0
@@ -405,11 +429,49 @@ class BiLSTM_Attention(nn.Module):
                 optimizer.step()
                 optimizer.zero_grad()
                 ctd += 1
+            if test_Input_Batch != None and test_Target_Batch != None  :
+                diff = 0
+                div = min( len(test_Input_Batch) , len(test_Target_Batch) )
+                for x,y in zip( test_Input_Batch , test_Target_Batch ) :
+                    if type(y) != type(torch.tensor([1])) :
+                        x = torch.from_numpy(x).float()
+                        y = torch.from_numpy(y).float()
+
+                    _ , out = self.forward(x.to(self.device) , out_max_Len = out_max_Len )
+                    diff += diff_Rate(out , y.to(self.device) )
+                    
+                lossTestList += [diff/div]
+                if  lossTestList[-1] < bestLossValue :
+                    print("Novo melhor")
+                    best_Encoder  =  cp.deepcopy(self.encoder)
+                    best_Decoder  =  cp.deepcopy(self.decoder)
+                    bestLossValue =  lossTestList[-1]
+                    print("Saiu do Melhor")
+
             Age += 1
             lossValue = lossValue/len(target_Batch)
             lossList.append(lossValue)
         
-        plt.plot(range(1 , Age + 1) , lossList)
+        if test_Input_Batch != None and test_Target_Batch != None  :
+            print("O melhor resultado de teste foi " , bestLossValue )
+            self.encoder = cp.deepcopy(best_Encoder)
+            self.decoder = cp.deepcopy(best_Decoder)
+        
+            trainLossPlot = plt.subplot(2,1,1)
+            trainLossPlot.plot(range(1 , Age + 1) , lossList)
+            plt.ylabel("Loss in Train" , fontsize = 14 )
+            plt.xlabel("Ages" , fontsize = 14)
+
+            testLossPlot = plt.subplot(2,1,2)
+            testLossPlot.plot(range(1 , Age + 1) , lossTestList )
+            plt.ylabel("Test Percent Loss" , fontsize = 14 )
+            plt.xlabel("Ages" , fontsize = 14)
+        else :
+            trainLossPlot = plt.subplot(1 , 1 , 1)
+            trainLossPlot.plot(range(1 , Age + 1) , lossList)
+            plt.ylabel("Loss in Train" , fontsize = 14 )
+            plt.xlabel("Ages" , fontsize = 14)
+
         if lossGraphNumber != 1 :
             plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_ATTENTON_LossInTrain_Plot.png".format(lossGraphNumber) )
             plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_ATTENTON_LossInTrain_Plot.pdf".format(lossGraphNumber) )
