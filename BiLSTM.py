@@ -303,6 +303,7 @@ class BiLSTM_Attention(nn.Module):
 
         #DECODER :
         out_class_Seq = []
+        seq = []
         buffer = self.BOS.to(self.device)
 
         ctd    = 0
