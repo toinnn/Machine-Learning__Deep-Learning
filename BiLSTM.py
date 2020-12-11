@@ -309,7 +309,7 @@ class BiLSTM_Attention(nn.Module):
         hidden = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
         cell   = torch.zeros(self.num_Layers_Decoder*2 , 1 , self.hidden_size_Decoder ,device = self.device )
 
-        while (buffer  != self.EOS.to(self.device)).all() and len(out_seq) < out_max_Len :
+        while (buffer  != self.EOS.to(self.device)).all() and len(out_class_Seq) < out_max_Len :
             #ATTENTION :
             att_hidden  = self.attention( torch.cat((hidden_State , hidden.view(1 , -1).repeat(hidden_State.shape[0] , 1)) ,dim = 1 ) ) 
             att_hidden  = F.softmax(  att_hidden , dim = 0)
