@@ -268,7 +268,7 @@ class BiLSTM_Attention(nn.Module):
         if attention_Shape == None :
             self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 ).to(device)
         else :
-            if relu_Layer_Attention :
+            if relu_Layer_Attention == False :
                 self.attention = nn.Sequential(*[nn.Linear(attention_Shape[i-1],attention_Shape[i]).to(device) for i in range(1,len(attention_Shape))])
             else :
                 self.attention = []
