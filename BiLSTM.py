@@ -251,7 +251,7 @@ class BiLSTM(nn.Module):
 class BiLSTM_Attention(nn.Module):
     def __init__(self , input_dim , hidden_size_Encoder , num_Layers_Encoder ,
             hidden_size_Decoder , num_Layers_Decoder , num_classes , embedding , EOS_Vector ,device = torch.device("cpu"),
-            attention_Shape = None ):
+            attention_Shape = None , relu_Layer_Attention = False ):
         super(BiLSTM_Attention, self).__init__()
         
         self.input_dim   = input_dim
@@ -268,7 +268,13 @@ class BiLSTM_Attention(nn.Module):
         if attention_Shape == None :
             self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 ).to(device)
         else :
-            self.attention = nn.Sequential(*[nn.Linear(attention_Shape[i-1],attention_Shape[i]).to(device) for i in range(1,len(attention_Shape))])
+            if relu_Layer_Attention :
+                self.attention = nn.Sequential(*[nn.Linear(attention_Shape[i-1],attention_Shape[i]).to(device) for i in range(1,len(attention_Shape))])
+            else :
+                self.attention = []
+                for i in range(1,len(attention_Shape)) :
+                    self.attention = self.attention + [nn.Linear(attention_Shape[i-1],attention_Shape[i]).to(device) , nn.ELU().to(device)]
+                self.attention  = nn.Sequential(*self.attention)
         #    hidden_size_Decoder*num_Layers_Decoder*2 )
         self.device = device
 
