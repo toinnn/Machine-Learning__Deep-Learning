@@ -269,12 +269,12 @@ class BiLSTM_Attention(nn.Module):
             self.attention = nn.Linear(2*hidden_size_Encoder*num_Layers_Encoder + 2*hidden_size_Decoder*num_Layers_Decoder , 1 ).to(device)
         else :
             if relu_Layer_Attention == False :
-                self.attention = nn.Sequential(*[nn.Linear(attention_Shape[i-1],attention_Shape[i]).to(device) for i in range(1,len(attention_Shape))])
+                self.attention = nn.Sequential(*[nn.Linear(self.attention_Shape[i-1],self.attention_Shape[i]).to(device) for i in range(1,len(self.attention_Shape))])
             else :
                 self.attention = []
-                for i in range(1,len(attention_Shape) - 1) :
-                    self.attention = self.attention + [nn.Linear(attention_Shape[i-1],attention_Shape[i]).to(device) , nn.ELU().to(device)]
-                self.attention  = self.attention + [nn.Linear(attention_Shape[-2],attention_Shape[-1]).to(device) ]
+                for i in range(1,len(self.attention_Shape) - 1) :
+                    self.attention = self.attention + [nn.Linear(self.attention_Shape[i-1],self.attention_Shape[i]).to(device) , nn.ELU().to(device)]
+                self.attention  = self.attention + [nn.Linear(self.attention_Shape[-2],self.attention_Shape[-1]).to(device) ]
                 self.attention  = nn.Sequential(*self.attention)
         #    hidden_size_Decoder*num_Layers_Decoder*2 )
         self.device = device
