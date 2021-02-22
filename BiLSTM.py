@@ -5,6 +5,8 @@ import heapq
 import random as rd
 from matplotlib import pyplot as plt
 import copy as cp
+from torch.nn.utils.rnn import pad_sequence
+
 print("teste")
 def diff_Rate(a,b):
     smallerSize = min(len(a) , len(b))
@@ -76,6 +78,7 @@ class BiLSTM(nn.Module):
         self.num_Layers_Encoder  = num_Layers_Encoder
         self.hidden_size_Decoder = hidden_size_Decoder 
         self.num_Layers_Decoder  = num_Layers_Decoder
+        self.num_classes         = num_classes
 
         self.encoder   = Encoder( input_dim , hidden_size_Encoder , num_Layers_Encoder , device)
         self.decoder   = Decoder(  input_dim , hidden_size_Decoder , num_Layers_Decoder , num_classes , device )
@@ -93,74 +96,117 @@ class BiLSTM(nn.Module):
         self.EOS = self.EOS.to(self.device)
         self.BOS = self.BOS.to(self.device)
 
-    def forward(self , x , out_max_Len = 150) :
+    def forward(self , x , out_max_Len = 150 , master_Imput = None , encoder_State = None ) :
         #ENCODER :
-        hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
-        cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
         
-        _ , (hidden , cell) = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
-        
+        if encoder_State == None :
+            hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
+            cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
+
+            _ , (hidden , cell) = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
+
+        else :
+            hidden , cell = encoder_State
+
+
 
         #DECODER :
         seq = []
         out_class_Seq = []
-        buffer = self.BOS.view(1,1,-1).to(self.device)
-        ctd = 0
-        while (buffer  != self.EOS.to(self.device)).all() and len(seq) < out_max_Len :
+        if master_Imput == None :
             
-            out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , hidden , cell) 
-            # print(out[0])
+            buffer = self.BOS.view(1,1,-1).to(self.device)
+            ctd = 0
+            states = []
+            while (buffer  != self.EOS.to(self.device)).all() and len(seq) < out_max_Len :
+                
+                out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , hidden , cell) 
+                # print(out[0])
+                states += [(hidden , cell)]
+                out        = heapq.nlargest( 1 , enumerate( out[0] ) , key = lambda x : x[1] )[0]
+
+                
+                word   = self.embedding.itos[ out[0] ]
+                buffer = self.embedding[ word ].float().to(self.device)
+
+                seq           += [word] 
+                out_class_Seq += [out[0]]
+                ctd   += 1
+                
+            return seq , torch.tensor(out_class_Seq).to(self.device) , states
+            # return self.linear(x[ : , -1 , : ])
+        else :
+            
+            out , (hidden , cell) = self.decoder(master_Imput , hidden , cell)
             out        = heapq.nlargest( 1 , enumerate( out[0] ) , key = lambda x : x[1] )[0]
 
-            
             word   = self.embedding.itos[ out[0] ]
             buffer = self.embedding[ word ].float().to(self.device)
 
             seq           += [word] 
             out_class_Seq += [out[0]]
-            ctd   += 1
-            
-        return seq , torch.tensor(out_class_Seq).to(self.device)
-        # return self.linear(x[ : , -1 , : ])
 
-    def forward_fit(self , x , out_max_Len = 150 ,target = None , force_target_input_rate = 0.5) :
+            return seq , torch.tensor(out_class_Seq).to(self.device) , (hidden , cell)
+
+
+    def forward_fit(self , x , out_max_Len = 150 ,target = None , force_target_input_rate = 0.5 , master_Imput = None ,
+        encoder_State = None) :
         
         # x = x.view(1 , x.shape[0] , x.shape[1] )
         #ENCODER :
-        hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
-        cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
-        
-        _ , (hidden , cell) = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
-        
+        if encoder_State == None :
+            hidden_State = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
+            cell_State   = torch.zeros(self.num_Layers_Encoder*2 , 1 , self.hidden_size_Encoder ,device = self.device )
+            
+            _ , (hidden , cell) = self.encoder(x.view(1 , x.shape[0] , x.shape[1] ).to(self.device) , hidden_State , cell_State )
+        else :
+            hidden , cell = encoder_State 
         
         #DECODER :
         out_seq = []
-        buffer = self.BOS.view(1,1,-1).to(self.device)
-        ctd = 0
-        # teste = (buffer  != self.EOS.to(self.device)).all()
-        # print("hidden.shape ",hidden.shape)
-        # print("cell.shape ",cell.shape)
-        # print("buffer.shape ",buffer.shape)
+        if master_Imput == None :
+            buffer = self.BOS.view(1,1,-1).to(self.device)
+            states = []
+            ctd = 0
+            # teste = (buffer  != self.EOS.to(self.device)).all()
+            # print("hidden.shape ",hidden.shape)
+            # print("cell.shape ",cell.shape)
+            # print("buffer.shape ",buffer.shape)
         
-        #(buffer  != self.EOS.to(self.device)).all() and 
-        while  len(out_seq) < out_max_Len :
-            # print(buffer.view(1,1,-1).shape)
+            #(buffer  != self.EOS.to(self.device)).all() and 
+            while  len(out_seq) < out_max_Len :
+                # print(buffer.view(1,1,-1).shape)
+                
+                
+                out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , hidden , cell) 
+                states += [(hidden , cell)]
+                out_seq   += [out]
+                out        = heapq.nlargest(1, enumerate( out[0] ) , key = lambda x : x[1])[0]
+                
+                if target != None and rd.random() < force_target_input_rate :
+                    word   = self.embedding.itos[target[ctd]]  
+                else:
+                    word   = self.embedding.itos[ out[0] ]
             
-            
-            out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , hidden , cell) 
+                buffer = self.embedding[ word ].float().to(self.device) 
+                ctd   += 1
+            return torch.cat(out_seq , dim =0 ) , states   
+        else :
+            # while  len(out_seq) < out_max_Len :
+
+            out , _ = self.decoder( master_Imput.view(1,1,-1) , hidden , cell) 
             out_seq   += [out]
-            out        = heapq.nlargest(1, enumerate( out[0] ) , key = lambda x : x[1])[0]
+            # out        = heapq.nlargest(1, enumerate( out[0] ) , key = lambda x : x[1])[0]
             
-            if target != None and rd.random() < force_target_input_rate :
-                word   = self.embedding.itos[target[ctd]]  
-            else:
-                word   = self.embedding.itos[ out[0] ]
+            # if target != None and rd.random() < force_target_input_rate :
+            #     word   = self.embedding.itos[target[ctd]]  
+            # else:
+            #     word   = self.embedding.itos[ out[0] ]
         
-            buffer = self.embedding[ word ].float().to(self.device) 
-            ctd   += 1
-            
+            # buffer = self.embedding[ word ].float().to(self.device) 
+            # ctd   += 1
         
-        return torch.cat(out_seq , dim =0 )
+            return torch.cat(out_seq , dim =0 ) , (hidden , cell)
     
 
     def fit(self , input_Batch , target_Batch , n , maxErro , maxAge = 1  , lossFunction = nn.CrossEntropyLoss() ,
@@ -186,7 +232,7 @@ class BiLSTM(nn.Module):
                     y = torch.from_numpy(y).float()
                 div = len(y)
                                 
-                out = self.forward_fit(x ,out_max_Len = y.shape[0] ,target = y.to(self.device) )
+                out , _ = self.forward_fit(x ,out_max_Len = y.shape[0] ,target = y.to(self.device) )
 
                 print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
                 loss = lossFunction(out , y.to(self.device))/div
@@ -501,3 +547,93 @@ class BiLSTM_Attention(nn.Module):
 #         for i in self.layer :
 #             x = i(x)
 #         return x
+
+class master_Slave_Encode_Decoder(nn.Module) :
+    def __init__(self , slaves , input_dim , hidden_size_Encoder , num_Layers_Encoder ,
+            hidden_size_Decoder , num_Layers_Decoder  , embedding , EOS_Vector ,device = torch.device("cpu"),
+            attention_Shape = None , relu_Layer_Attention = False ):
+        super(master_Slave_Encode_Decoder).__init__()
+        self.device = device
+        
+        self.slaves = []
+        for i in slaves :
+            self.slaves += [i]
+        
+
+        # self.master = BiLSTM(, input_dim , hidden_size_Encoder , num_Layers_Encoder ,
+        #     hidden_size_Decoder , num_Layers_Decoder , len(self.slaves) , embedding , EOS_Vector ,device ,
+        #     attention_Shape  , relu_Layer_Attention )
+        self.master_Encoder = BiLSTM(input_dim , hidden_size_Encoder , num_Layers_Encoder , hidden_size_Decoder ,
+            num_Layers_Decoder , len(self.slaves) + 2 , embedding , EOS_Vector , device = device )
+        self.slaves = nn.ModuleList(self.slaves)
+
+    def setDevice(self , device):
+        self.device = device
+        self.master_Encoder.setDevice(device)
+        for i in slaves :
+            i.setDevice(device)
+        
+    def forward(self ,x , out_max_Len = 150 ):
+
+        # seq , out_class_Seq , states = self.master_Encoder(x , out_max_Len = 150 )
+        # for i in range( len( out_class_Seq )) :
+        #     if out_class_Seq[i] != len()
+        pass
+
+    def forward_fit(self , x , target  , out_max_Len = 150 , force_target_input_rate = 0.5 ,force_master_out_rate = .5 ):
+        out_seq , states = self.master_Encoder.forward_fit(x , out_max_Len , target ,  force_target_input_rate)
+        slave_out = []
+        for i in range( len(target) ) :
+            
+            # out   =  heapq.nlargest( 1 , enumerate( out_seq[i] ) , key = lambda x : x[1])[0]
+            if target[i]<len(self.slaves) :
+                out , _     =  self.slaves[ target[ i ] ].forward_fit( x , master_Imput = states[i][0] )
+                slave_out  +=  [out.view(-1)]
+
+            # if target != None and rd.random() < force_master_out_rate :
+            #     out             = heapq.nlargest( 1 , enumerate( out_seq[i] ) , key = lambda x : x[1])[0]
+            #     slave_seq , _   = self.slaves[ out[0] ].forward_fit( states[i] )
+
+            # else :
+        out_seq   = [i for i in out_seq ]
+        return out_seq , slave_out 
+    
+    def fit(self , x , y_Master , y_Slave , n , maxErro , maxAge = 1  , lossFunction = nn.CrossEntropyLoss() ):
+        #                           [i.parameters() for i in self.slaves ]+[self.master_Encoder.parameters()]
+        optmizer  = torch.optim.Adam( self.parameters()  , n )
+        Age = 0
+        lossValue = float("inf")
+        bestValue = float("inf")
+        lossList  = []
+        while Age < maxAge and lossValue > maxErro :
+            lossValue = 0
+            for x_In , y_Mas , y_Sla in zip(x , y_Master , y_Slave):
+                y   = torch.cat([y_Mas , y_Sla] , dim = 1)
+                div = len(y)
+            
+                out_Master , out_Slave = self.forward_fit(x , y_Mas  , len(y_Mas) )
+                #c = pad_sequence([a.view(-1) , b.view(-1) , d.view(-1)]).permute(1,0)
+                
+                out = pad_sequence(out_Master + out_Slave).permute(1,0)
+                # y   = pad_sequence(y ).permute(1,0)
+
+                loss       = lossFunction(out , y.to(self.device) )/div
+                lossValue += loss.item()
+                loss.backward()
+
+                optimizer.step()
+                optimizer.zero_grad()
+            Age += 1
+            lossValue = lossValue / min(len(x) , len(y_Master) , len(y_Slave) )
+            lossList += [lossValue]
+            if lossValue > bestValue :
+                best_Slaves = cp.deepcopy(self.slaves)
+                best_Master = cp.deepcopy(self.master_Encoder)
+        self.slaves         = best_Slaves
+        self.master_Encoder = best_Master
+
+        plt.plot(range(len(lossList)) , lossList)
+        plt.title("Erro")
+        plt.xlabel("Ages" , fontsize = 14)
+        plt.show()
+
