@@ -159,7 +159,7 @@ class decoderBlock(nn.Module):
         queries = self.norm(attention + x)
         return self.transformerBlock(values , keys , queries , scale = scale)
 class decoder(nn.Module):
-    def __init__(self,model_dim ,heads ,num_layers ,word_Embedding ,EOS  ,forward_expansion = 4):
+    def __init__(self,model_dim ,heads ,num_layers ,word_Embedding ,EOS , num_Classes  ,forward_expansion = 4):
         super(decoder,self).__init__()
         self.embedding = word_Embedding
         self.EOS = EOS  #End-Of-Sentence Vector
@@ -169,7 +169,8 @@ class decoder(nn.Module):
         self.embedding["<EOS>"] = self.EOS#DEPOIS TIRAR ESSE NUMPY
         self.layers = nn.ModuleList( decoderBlock(model_dim , heads , forward_expansion = forward_expansion) for _ in torch.arange(num_layers))
         # self.linear_Out = nn.Linear(model_dim , len(self.embedding) )---OLHAR AKI DEPOIS---
-        self.linear_Out = nn.Linear(model_dim , len(self.embedding.vocab) )
+        # self.linear_Out = nn.Linear(model_dim , len(self.embedding.vocab) )
+        self.linear_Out = nn.Linear(model_dim , num_Classes )
         if type(EOS) != type(torch.tensor([1])) :
             self.EOS = torch.from_numpy(self.EOS).float()
             self.BOS = -self.EOS
@@ -219,7 +220,7 @@ class decoder(nn.Module):
         return sequence
 
 class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector 
-    def __init__(self , model_dim ,heads_Enc , heads_Dec ,num_Enc_layers ,num_Dec_layers ,Embedding ,EOS_Vector ):
+    def __init__(self , model_dim ,heads_Enc , heads_Dec ,num_Enc_layers ,num_Dec_layers ,Embedding ,EOS_Vector , num_class ):
         super(Tener,self).__init__()
         self.model_dim = model_dim
         self.Embedding = Embedding
