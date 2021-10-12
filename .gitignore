@@ -1,5 +1,5 @@
-EmbeddingBaixados/
-test.py
-testePlot.pdf
-testePlot.png
-wv_W2Vec.pickle
+NLP_NamedEntityRecognition/EmbeddingBaixados/
+NLP_NamedEntityRecognition/test.py
+NLP_NamedEntityRecognition/testePlot.pdf
+NLP_NamedEntityRecognition/testePlot.png
+NLP_NamedEntityRecognition/wv_W2Vec.pickle
