@@ -184,6 +184,7 @@ class BiLSTM(nn.Module):
                 out        = heapq.nlargest(1, enumerate( out[0] ) , key = lambda x : x[1])[0]
                 
                 if target != None and rd.random() < force_target_input_rate :
+                    # print("ctd : " , ctd )
                     word   = self.embedding.itos[target[ctd]]  
                 else:
                     word   = self.embedding.itos[ out[0] ]
@@ -552,7 +553,7 @@ class master_Slave_Encode_Decoder(nn.Module) :
     def __init__(self , slaves , input_dim , hidden_size_Encoder , num_Layers_Encoder ,
             hidden_size_Decoder , num_Layers_Decoder  , embedding , EOS_Vector ,device = torch.device("cpu"),
             attention_Shape = None , relu_Layer_Attention = False ):
-        super(master_Slave_Encode_Decoder).__init__()
+        super(master_Slave_Encode_Decoder , self ).__init__()
         self.device = device
         
         self.slaves = []
@@ -560,12 +561,11 @@ class master_Slave_Encode_Decoder(nn.Module) :
             self.slaves += [i]
         
 
-        # self.master = BiLSTM(, input_dim , hidden_size_Encoder , num_Layers_Encoder ,
-        #     hidden_size_Decoder , num_Layers_Decoder , len(self.slaves) , embedding , EOS_Vector ,device ,
-        #     attention_Shape  , relu_Layer_Attention )
+        
         self.master_Encoder = BiLSTM(input_dim , hidden_size_Encoder , num_Layers_Encoder , hidden_size_Decoder ,
             num_Layers_Decoder , len(self.slaves) + 2 , embedding , EOS_Vector , device = device )
         self.slaves = nn.ModuleList(self.slaves)
+        # self.encoderTransLayer = nn.Linear(input_dim * hidden_size_Encoder * num_Layers_Encoder * 2 , input_dim )
 
     def setDevice(self , device):
         self.device = device
@@ -586,6 +586,10 @@ class master_Slave_Encode_Decoder(nn.Module) :
         for i in range( len(target) ) :
             
             # out   =  heapq.nlargest( 1 , enumerate( out_seq[i] ) , key = lambda x : x[1])[0]
+            print("target[i] : " ,target[i])
+            print("i         : " ,i)
+            # print("states[i][0] : " , states[i][0].shape)
+            print("len(states) : " , len(states) )
             if target[i]<len(self.slaves) :
                 out , _     =  self.slaves[ target[ i ] ].forward_fit( x , master_Imput = states[i][0] )
                 slave_out  +=  [out.view(-1)]
@@ -595,12 +599,13 @@ class master_Slave_Encode_Decoder(nn.Module) :
             #     slave_seq , _   = self.slaves[ out[0] ].forward_fit( states[i] )
 
             # else :
+            
         out_seq   = [i for i in out_seq ]
         return out_seq , slave_out 
     
     def fit(self , x , y_Master , y_Slave , n , maxErro , maxAge = 1  , lossFunction = nn.CrossEntropyLoss() ):
         #                           [i.parameters() for i in self.slaves ]+[self.master_Encoder.parameters()]
-        optmizer  = torch.optim.Adam( self.parameters()  , n )
+        optimizer  = torch.optim.Adam( self.parameters()  , n )
         Age = 0
         lossValue = float("inf")
         bestValue = float("inf")
@@ -608,15 +613,17 @@ class master_Slave_Encode_Decoder(nn.Module) :
         while Age < maxAge and lossValue > maxErro :
             lossValue = 0
             for x_In , y_Mas , y_Sla in zip(x , y_Master , y_Slave):
-                y   = torch.cat([y_Mas , y_Sla] , dim = 1)
+                y   = torch.cat([y_Mas , y_Sla] , dim = 1).permute(1,0).view(-1)
                 div = len(y)
-            
-                out_Master , out_Slave = self.forward_fit(x , y_Mas  , len(y_Mas) )
+
+                
+                out_Master , out_Slave = self.forward_fit(x_In , y_Mas.view(-1)  , len(y_Mas.view(-1)) )
                 #c = pad_sequence([a.view(-1) , b.view(-1) , d.view(-1)]).permute(1,0)
                 
                 out = pad_sequence(out_Master + out_Slave).permute(1,0)
                 # y   = pad_sequence(y ).permute(1,0)
 
+                print("out.shape = {}\ny.shape = {} ".format(out.shape , y.shape ))
                 loss       = lossFunction(out , y.to(self.device) )/div
                 lossValue += loss.item()
                 loss.backward()

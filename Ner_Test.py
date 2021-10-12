@@ -1,7 +1,7 @@
 if __name__ == "__main__" :
     from Tener import Tener
     from skip_Gram import skip_gram
-    from BiLSTM import BiLSTM , BiLSTM_Attention
+    from BiLSTM import BiLSTM , BiLSTM_Attention , master_Slave_Encode_Decoder
     import os 
     import json
     import torch
@@ -12,6 +12,7 @@ if __name__ == "__main__" :
     from torchtext.data import Field
     import re
     import numpy as np
+    
     # torch.set_printoptions(precision=20)
     def word2vec(wordVec , word ,dim):
         try:
@@ -76,6 +77,16 @@ if __name__ == "__main__" :
                 classifiedList += torch.tensor([-1])
         print("Classes igual a " , classes )
         return classes , [ i if (i !=-1).all() else torch.tensor([len(classes.keys())]) for i in classifiedList  ]
+    
+    def classes2MasterSlave(slavesOutputs , masterOutputs ):
+        masters = []
+        slaves  = []
+        for i , j in zip(masterOutputs , slavesOutputs ) :
+            masters += [i]*len(j)
+            slaves  += j
+        return torch.tensor(slaves ).view(1,-1) , tensor(masters).view(1,-1)
+
+
     # -47 : Key não existente ; -127 : separador entre targets diferentes ; -79 : fora do vocab ; 23 : End-Of-Sentence
         
     
@@ -151,6 +162,9 @@ if __name__ == "__main__" :
     # classes , ark_Target = jsonList2classes(ark_Target , "materias")
     # ark_Target = [torch.cat((i, torch.tensor([len(classes.keys()) + 1]) ) , dim = 0 ) for i in ark_Target ]
 
+    # classes2 , ark_Target2 = jsonList2classes(ark_Target , "classe")
+    # ark_Target2 = [torch.cat((i, torch.tensor([len(classes2.keys()) + 1]) ) , dim = 0 ) for i in ark_Target2 ]
+    
     # ark , arkTest               = ark[0:50] , ark[50:] 
     # ark_Target , ark_TargetTest = ark_Target[0:50] , ark_Target[50:]
 
@@ -163,21 +177,33 @@ if __name__ == "__main__" :
 
     #O Git-Hub não permite que seja upado um arquivo tão grande quanto wv_W2Vec.pickle , então pode descomentar a linha 110 para gerar
     #o wv serializado e depois comentar as linhas de manipulação do wv e descomentar a linha abaixo para conseguir uma execução + rápida
-    wv = pickle.load(open("wv_W2Vec.pickle","rb"))
-    ark = pickle.load(open("ark_W2Vec.pickle","rb"))
-    ark_Target = pickle.load(open("ark_Target_W2Vec.pickle","rb"))
-    ark_Test = pickle.load(open("ark_Test_W2Vec.pickle","rb"))
-    ark_TargetTest = pickle.load(open("ark_Target_Test_W2Vec.pickle","rb"))
-    classes = pickle.load(open("classesTarget_Entity_materias_W2Vec.pickle","rb"))
+    # wv             = pickle.load(open("wv_W2Vec.pickle" , "rb"))
+    ark            = pickle.load(open("ark_W2Vec.pickle" , "rb"))
+    ark_Target     = pickle.load(open("ark_Target_W2Vec.pickle" ,"rb"))
+    ark_Test       = pickle.load(open("ark_Test_W2Vec.pickle" , "rb" ) )
+    ark_TargetTest = pickle.load(open("ark_Target_Test_W2Vec.pickle" , "rb"))
+    classes        = pickle.load(open("classesTarget_Entity_materias_W2Vec.pickle" , "rb"))
     #Separando em dataset de teste e de treino 
-    
-    print("len(ark) = {}\nlen(ark_Test) = {}".format(len(ark) , len(ark_Test)))
-    # print(ark_Target)
-    print(len(classes.keys())+1 )
-    print(ark_TargetTest)
 
-    wv = Vectors(name = "EmbeddingBaixados\\Word2Vec_skip_s50\\skip_s50.txt")
+
+    
+    # print("len(ark) = {}\nlen(ark_Test) = {}".format(len(ark) , len(ark_Test)))
+    # print(ark_Target)
+    # print(len(classes.keys())+1 )
+    # print(ark_TargetTest)
+    # a = list(zip(*[ classes2MasterSlave(i , (0,1) ) for i in zip(ark_Target , ark_Target2 ) ]))
+    # print( a[0] )
+    # print( a[1] )
+    
+
+    wv = Vectors( name = "EmbeddingBaixados\\Word2Vec_skip_s50\\skip_s50.txt" )
     # print(wv["oi"])
+    # print(wv.vectors[2])
+    
+    slv1 = BiLSTM(50 ,100  , 1, 100,1 , len(classes.keys())+2 , wv , wv.vectors[len(classes.keys()) + 1] , torch.device("cpu"))
+    slv2 = BiLSTM(50 ,100  , 1, 100,1 , len(classes2.keys())+2 , wv , wv.vectors[len(classes2.keys()) + 1] , torch.device("cpu"))
+    mst  = master_Slave_Encode_Decoder((slv1 , slv2) , 50 , 25 , 1 ,25 , 1 , wv , wv.vectors[2])
+    mst.fit( ark , a[1] , a[0] , 0.05 , 0.1 )
     # model = Tener(50 , 5 ,5 , 6 , 6 ,wv , np.ones([1,50])*23 ) 
     # model.fit(ark , ark_Target , 10 , 0.005 , n = 0.05 , lossGraphNumber = 1 )
     # pickle.dump(model , open("1_TenerTreinado_maxAge=10_maxErro=0.005_n=0.05.pickle" , "wb"))
