@@ -1,10 +1,10 @@
 # Machine-Learning__Deep-Learning
 Folder contendo projetos que utilizam machine learning e implementação de modelos                                 
                                                                                                                                 
-->NLP_NamedEntityRecognition                                                                               
-->TENer                                                                                     
-->BiLstm                                                                                         
-->BiGru
+- NLP_NamedEntityRecognition                                                                               
+- TENer                                                                                     
+- BiLstm                                                                                         
+- BiGru
 
 ## NLP_NamedEntityRecognition
 Projeto em NLP utilizando pytorch para construção dos modelos em rede Neural
