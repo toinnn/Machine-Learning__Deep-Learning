@@ -11,3 +11,6 @@ Projeto em NLP utilizando pytorch para construção dos modelos em rede Neural
 
 ### TENer
 Implementação em pytorch baseada no paper [TENER: Adapting Transformer Encoder for Named Entity Recognition](https://arxiv.org/abs/1911.04474) 
+
+### BiLstm
+Implementação em pytorch de BiLstm com customização batizada de Master_Slave 
