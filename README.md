@@ -14,3 +14,6 @@ Implementação em pytorch baseada no paper [TENER: Adapting Transformer Encoder
 
 ### BiLstm
 Implementação em pytorch de BiLstm com customização batizada de Master_Slave 
+
+### BiGru
+Implementação em pytorch de BiGru  
