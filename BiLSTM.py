@@ -6,6 +6,7 @@ import random as rd
 from matplotlib import pyplot as plt
 import copy as cp
 from torch.nn.utils.rnn import pad_sequence
+from overloading.overloading import override , overload
 
 print("teste")
 def diff_Rate(a,b):
@@ -65,8 +66,8 @@ class Decoder(nn.Module):
         x , (hidden_State , cell_State) = self.lstm(x , (hidden_State , cell_State))
 
         return self.linear(x[ : , -1 , : ]) , (hidden_State , cell_State)
-
-class BiLSTM(nn.Module):
+ 
+class BiLSTM(nn.Module , override):
     def __init__(self , input_dim , hidden_size_Encoder , num_Layers_Encoder ,
             hidden_size_Decoder , num_Layers_Decoder , num_classes , embedding , EOS_Vector , device = torch.device("cpu") ):
         super(BiLSTM , self).__init__()
@@ -209,8 +210,8 @@ class BiLSTM(nn.Module):
         
             return torch.cat(out_seq , dim =0 ) , (hidden , cell)
     
-
-    def fit(self , input_Batch , target_Batch , n , maxErro , maxAge = 1  , lossFunction = nn.CrossEntropyLoss() ,
+    @overload
+    def fit(self , input_Batch :list , target_Batch:list , n , maxErro , maxAge = 1  , lossFunction = nn.CrossEntropyLoss() ,
             lossGraphNumber = 1 , test_Input_Batch = None , test_Target_Batch = None , out_max_Len = 150  ) :
 
         optimizer = torch.optim.Adam(self.parameters(), n )
@@ -295,7 +296,7 @@ class BiLSTM(nn.Module):
             plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_LossInTrain_Plot.pdf")
         plt.show()
 
-class BiLSTM_Attention(nn.Module):
+class BiLSTM_Attention(nn.Module , override ):
     def __init__(self , input_dim , hidden_size_Encoder , num_Layers_Encoder ,
             hidden_size_Decoder , num_Layers_Decoder , num_classes , embedding , EOS_Vector ,device = torch.device("cpu"),
             attention_Shape = None , relu_Layer_Attention = False ):
@@ -449,25 +450,11 @@ class BiLSTM_Attention(nn.Module):
         
         return torch.cat(out_seq , dim =0 )
     
-
-    def fit(self , input_Batch , target_Batch , n , maxErro , maxAge = 1 , lossFunction = nn.CrossEntropyLoss() ,
-            lossGraphNumber = 1 , test_Input_Batch = None , test_Target_Batch = None , out_max_Len = 150) :
-
-        optimizer = torch.optim.Adam(self.parameters(), n )
-        lossValue = float("inf")
-        Age = 0
-        lossList = []
-        bestLossValue = float("inf")
-        # input_Batch = [i.view(1 , i.shape[0] , i.shape[1] ) for i in input_Batch ]    
-
-        if test_Input_Batch != None and test_Target_Batch != None :
-            lossTestList = []
-
-        while lossValue > maxErro and Age < maxAge :
-            lossValue = 0
-            ctd = 0
-            print("Age atual {}".format(Age))
-            for x,y in zip(input_Batch , target_Batch ) :
+    def __saveLossGraph(self , path:str):
+        pass
+    def train_Step(self ,input_Batch :list , target_Batch : list , optimizer , lossFunction ,bestLossValue : float ,
+            ctd : int , lossValue : int , test_Input_Batch= None , test_Target_Batch = None ,  out_max_Len = 150 ) :
+        for x,y in zip(input_Batch , target_Batch ) :
                 if type(y) != type(torch.tensor([1])) :
                     x = torch.from_numpy(x).float()
                     y = torch.from_numpy(y).float()
@@ -502,6 +489,66 @@ class BiLSTM_Attention(nn.Module):
                     best_Decoder  =  cp.deepcopy(self.decoder)
                     bestLossValue =  lossTestList[-1]
                     print("Saiu do Melhor")
+        
+        if test_Input_Batch != None and test_Target_Batch != None  :
+            return best_Encoder , best_Decoder , lossValue
+        else :
+            return _ , _ , lossValue
+    @overload #FALTA IMPLEMENTAR A PARTE DO SPARK
+    def fit(self , train_Batch_Path : str , n , maxErro , maxAge = 1 , lossFunction = nn.CrossEntropyLoss() ,
+            rows_by_Step = 50 ,lossGraphNumber = 1 , test_Batch_Path = None , out_max_Len = 150) :
+        """Usa PySpark Pra iterar ao longo do DataSet em formato csv """
+        optimizer = torch.optim.Adam(self.parameters(), n )
+        lossValue = float("inf")
+        Age = 0
+        lossList = []
+        bestLossValue = float("inf")
+        # input_Batch = [i.view(1 , i.shape[0] , i.shape[1] ) for i in input_Batch ]    
+
+        if test_Input_Batch != None and test_Target_Batch != None :
+            lossTestList = []
+
+        while lossValue > maxErro and Age < maxAge :
+            lossValue = 0
+            ctd = 0
+            print("Age atual {}".format(Age))
+            best_Encoder , best_Decoder , lossValue = self.train_Step(input_Batch , target_Batch , optimizer  ,
+            lossFunction ,bestLossValue ,ctd ,lossValue , test_Input_Batch , test_Target_Batch , out_max_Len)
+            """for x,y in zip(input_Batch , target_Batch ) :
+                if type(y) != type(torch.tensor([1])) :
+                    x = torch.from_numpy(x).float()
+                    y = torch.from_numpy(y).float()
+                div = len(y)
+                                
+                out = self.forward_fit(x , out_max_Len = y.shape[0] ,target = y.to(self.device) )
+
+                print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
+                loss = lossFunction(out , y.to(self.device))/div
+                lossValue += loss.item()
+                print("Pré backward")
+                loss.backward()
+                print("Pós backward")
+                optimizer.step()
+                optimizer.zero_grad()
+                ctd += 1
+            if test_Input_Batch != None and test_Target_Batch != None  :
+                diff = 0
+                div = min( len(test_Input_Batch) , len(test_Target_Batch) )
+                for x,y in zip( test_Input_Batch , test_Target_Batch ) :
+                    if type(y) != type(torch.tensor([1])) :
+                        x = torch.from_numpy(x).float()
+                        y = torch.from_numpy(y).float()
+
+                    _ , out = self.forward(x.to(self.device) , out_max_Len = out_max_Len )
+                    diff += diff_Rate(out , y.to(self.device) )
+                    
+                lossTestList += [diff/div]
+                if  lossTestList[-1] < bestLossValue :
+                    print("Novo melhor")
+                    best_Encoder  =  cp.deepcopy(self.encoder)
+                    best_Decoder  =  cp.deepcopy(self.decoder)
+                    bestLossValue =  lossTestList[-1]
+                    print("Saiu do Melhor")"""
 
             Age += 1
             lossValue = lossValue/len(target_Batch)
@@ -527,12 +574,99 @@ class BiLSTM_Attention(nn.Module):
             plt.ylabel("Loss in Train" , fontsize = 14 )
             plt.xlabel("Ages" , fontsize = 14)
 
-        if lossGraphNumber != 1 :
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_ATTENTON_LossInTrain_Plot.png".format(lossGraphNumber) )
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_ATTENTON_LossInTrain_Plot.pdf".format(lossGraphNumber) )
+        if lossGraphPath != None and test_Input_Batch != None and test_Target_Batch != None :
+            plt.savefig(f"{lossGraphPath}_BiLSTM_ATTENTON_LossInTrain_Plot.png" )
+            plt.savefig(f"{lossGraphPath}_BiLSTM_ATTENTON_LossInTrain_Plot.pdf" )
         else :
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_ATTENTON_LossInTrain_Plot.png")
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_ATTENTON_LossInTrain_Plot.pdf")
+            plt.savefig("BiLSTM_ATTENTON_LossInTrain_Plot.png")
+            plt.savefig("BiLSTM_ATTENTON_LossInTrain_Plot.pdf")
+        plt.show()
+    @overload
+    def fit(self , input_Batch :list , target_Batch : list, n , maxErro , maxAge = 1 , lossFunction = nn.CrossEntropyLoss() ,
+            lossGraphPath = None , test_Input_Batch = None, test_Target_Batch = None , out_max_Len  = 150) :
+
+        optimizer = torch.optim.Adam(self.parameters(), n )
+        lossValue = float("inf")
+        Age = 0
+        lossList = []
+        bestLossValue = float("inf")
+        # input_Batch = [i.view(1 , i.shape[0] , i.shape[1] ) for i in input_Batch ]    
+
+        if test_Input_Batch != None and test_Target_Batch != None :
+            lossTestList = []
+
+        while lossValue > maxErro and Age < maxAge :
+            lossValue = 0
+            ctd = 0
+            print("Age atual {}".format(Age))
+            best_Encoder , best_Decoder , lossValue = self.train_Step(input_Batch , target_Batch , optimizer  ,
+            lossFunction ,bestLossValue ,ctd ,lossValue , test_Input_Batch , test_Target_Batch , out_max_Len)
+            """for x,y in zip(input_Batch , target_Batch ) :
+                if type(y) != type(torch.tensor([1])) :
+                    x = torch.from_numpy(x).float()
+                    y = torch.from_numpy(y).float()
+                div = len(y)
+                                
+                out = self.forward_fit(x , out_max_Len = y.shape[0] ,target = y.to(self.device) )
+
+                print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
+                loss = lossFunction(out , y.to(self.device))/div
+                lossValue += loss.item()
+                print("Pré backward")
+                loss.backward()
+                print("Pós backward")
+                optimizer.step()
+                optimizer.zero_grad()
+                ctd += 1
+            if test_Input_Batch != None and test_Target_Batch != None  :
+                diff = 0
+                div = min( len(test_Input_Batch) , len(test_Target_Batch) )
+                for x,y in zip( test_Input_Batch , test_Target_Batch ) :
+                    if type(y) != type(torch.tensor([1])) :
+                        x = torch.from_numpy(x).float()
+                        y = torch.from_numpy(y).float()
+
+                    _ , out = self.forward(x.to(self.device) , out_max_Len = out_max_Len )
+                    diff += diff_Rate(out , y.to(self.device) )
+                    
+                lossTestList += [diff/div]
+                if  lossTestList[-1] < bestLossValue :
+                    print("Novo melhor")
+                    best_Encoder  =  cp.deepcopy(self.encoder)
+                    best_Decoder  =  cp.deepcopy(self.decoder)
+                    bestLossValue =  lossTestList[-1]
+                    print("Saiu do Melhor")"""
+
+            Age += 1
+            lossValue = lossValue/len(target_Batch)
+            lossList.append(lossValue)
+        
+        if test_Input_Batch != None and test_Target_Batch != None  :
+            print("O melhor resultado de teste foi " , bestLossValue )
+            self.encoder = cp.deepcopy(best_Encoder)
+            self.decoder = cp.deepcopy(best_Decoder)
+        
+            trainLossPlot = plt.subplot(2,1,1)
+            trainLossPlot.plot(range(1 , Age + 1) , lossList)
+            plt.ylabel("Loss in Train" , fontsize = 14 )
+            plt.xlabel("Ages" , fontsize = 14)
+
+            testLossPlot = plt.subplot(2,1,2)
+            testLossPlot.plot(range(1 , Age + 1) , lossTestList )
+            plt.ylabel("Test Percent Loss" , fontsize = 14 )
+            plt.xlabel("Ages" , fontsize = 14)
+        else :
+            trainLossPlot = plt.subplot(1 , 1 , 1)
+            trainLossPlot.plot(range(1 , Age + 1) , lossList)
+            plt.ylabel("Loss in Train" , fontsize = 14 )
+            plt.xlabel("Ages" , fontsize = 14)
+
+        if lossGraphPath != None and test_Input_Batch != None and test_Target_Batch != None :
+            plt.savefig(f"{lossGraphPath}_BiLSTM_ATTENTON_LossInTrain_Plot.png" )
+            plt.savefig(f"{lossGraphPath}_BiLSTM_ATTENTON_LossInTrain_Plot.pdf" )
+        else :
+            plt.savefig("BiLSTM_ATTENTON_LossInTrain_Plot.png")
+            plt.savefig("BiLSTM_ATTENTON_LossInTrain_Plot.pdf")
         plt.show()
 
 # class attention_Layer(nn.Module):
