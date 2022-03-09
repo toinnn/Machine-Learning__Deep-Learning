@@ -167,9 +167,6 @@ class BiLSTM(nn.Module ):#, override):
         #DECODER :
         out_seq = []
         if master_Imput == None :
-            print(f"type(self.BOS)  = {type(self.BOS)}")
-            print(f"self.BOS.shape  = {self.BOS.shape}")
-            print(f"self.BOS  = {self.BOS}")
             buffer = self.BOS.view(1 , 1, -1).to(self.device)
             states = []
             ctd = 0
@@ -297,11 +294,12 @@ class BiLSTM(nn.Module ):#, override):
             plt.xlabel("Ages" , fontsize = 14)
 
         if lossGraphNumber != 1 :
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_LossInTrain_Plot.png".format(lossGraphNumber) )
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_LossInTrain_Plot.pdf".format(lossGraphNumber) )
+            # plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/{}_BiLSTM_LossInTrain_Plot.png".format(lossGraphNumber) )
+            plt.savefig("{}_BiLSTM_LossInTrain_Plot.png".format(lossGraphNumber) )
+            plt.savefig("{}_BiLSTM_LossInTrain_Plot.pdf".format(lossGraphNumber) )
         else :
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_LossInTrain_Plot.png")
-            plt.savefig("/content/drive/My Drive/Aprender a Usar A nuvem_Rede-Neural/BiLSTM_LossInTrain_Plot.pdf")
+            plt.savefig("BiLSTM_LossInTrain_Plot.png")
+            plt.savefig("BiLSTM_LossInTrain_Plot.pdf")
         plt.show()
 
 class BiLSTM_Attention(nn.Module ):#, override ):
