@@ -167,7 +167,10 @@ class BiLSTM(nn.Module ):#, override):
         #DECODER :
         out_seq = []
         if master_Imput == None :
-            buffer = self.BOS.view(1,1,-1).to(self.device)
+            print(f"type(self.BOS)  = {type(self.BOS)}")
+            print(f"self.BOS.shape  = {self.BOS.shape}")
+            print(f"self.BOS  = {self.BOS}")
+            buffer = self.BOS.view(1 , 1, -1).to(self.device)
             states = []
             ctd = 0
             # teste = (buffer  != self.EOS.to(self.device)).all()
