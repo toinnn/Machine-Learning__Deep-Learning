@@ -190,7 +190,7 @@ class BiLSTM(nn.Module ):#, override):
                 states += [(hidden , cell)]
                 out_seq   += [out]
                 print("Pré_nlargest")
-                out = torch.argmax(out[0])
+                out        = torch.argmax(out[0])
                 # if self.device != torch.device("cpu") :
                 #     out = max_reduce(enumerate(out[0]))[0]
                 # else :
