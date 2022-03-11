@@ -8,7 +8,11 @@ import copy as cp
 from torch.nn.utils.rnn import pad_sequence
 # from overloading.overloading import override , overload
 from pyspark.sql import SparkSession
+from numba import cuda
 
+@cuda.reduce
+def max_reduce(a,b) :
+    return a if max(a[1],b[1]) == a[1] else b 
 print("teste")
 def diff_Rate(a,b):
     smallerSize = min(len(a) , len(b))
@@ -184,7 +188,10 @@ class BiLSTM(nn.Module ):#, override):
                 states += [(hidden , cell)]
                 out_seq   += [out]
                 print("Pré_nlargest")
-                out        = heapq.nlargest(1, enumerate( out[0] ) , key = lambda x : x[1])[0]
+                if self.device != torch.device("cpu") :
+                    out = max_reduce(enumerate(out[0]))[0]
+                else :
+                    out        = heapq.nlargest(1, enumerate( out[0] ) , key = lambda x : x[1])[0]
                 print("Pós_nlargest")
                 if target != None and rd.random() < force_target_input_rate :
                     # print("ctd : " , ctd )
