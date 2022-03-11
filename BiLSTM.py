@@ -249,7 +249,7 @@ class BiLSTM(nn.Module ):#, override):
                                 
                 out , _ = self.forward_fit(x ,out_max_Len = y.shape[0] ,target = y.to(self.device) )
 
-                if ctd%1000 :
+                if ctd%1000 == 0 :
                     print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
                 loss = lossFunction(out , y.to(self.device))/div
                 lossValue += loss.item()
