@@ -247,6 +247,7 @@ class BiLSTM(nn.Module ):#, override):
                 print("Pós backward")
                 optimizer.step()
                 optimizer.zero_grad()
+                print("Pós zero-grad")
                 ctd += 1
             if test_Input_Batch != None and test_Target_Batch != None  :
                 diff = 0
