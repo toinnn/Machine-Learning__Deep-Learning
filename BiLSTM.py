@@ -190,7 +190,7 @@ class BiLSTM(nn.Module ):#, override):
                 states += [(hidden , cell)]
                 out_seq   += [out]
                 print("Pré_nlargest")
-                out        = torch.argmax(out[0])
+                out        = torch.argmax(out[0]).item()
                 # if self.device != torch.device("cpu") :
                 #     out = max_reduce(enumerate(out[0]))[0]
                 # else :
@@ -200,7 +200,7 @@ class BiLSTM(nn.Module ):#, override):
                     # print("ctd : " , ctd )
                     word   = self.embedding.itos[target[ctd]]  
                 else:
-                    word   = self.embedding.itos[ out[0] ]
+                    word   = self.embedding.itos[ out]#[0] ]
             
                 buffer = self.embedding[ word ].float().to(self.device) 
                 ctd   += 1
