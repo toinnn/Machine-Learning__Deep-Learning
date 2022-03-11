@@ -189,13 +189,12 @@ class BiLSTM(nn.Module ):#, override):
                 out , (hidden , cell) = self.decoder(buffer.view(1,1,-1) , hidden , cell) 
                 states += [(hidden , cell)]
                 out_seq   += [out]
-                print("Pré_nlargest")
                 out        = torch.argmax(out[0]).item()
                 # if self.device != torch.device("cpu") :
                 #     out = max_reduce(enumerate(out[0]))[0]
                 # else :
                 #     out        = heapq.nlargest(1, enumerate( out[0] ) , key = lambda x : x[1])[0]
-                print("Pós_nlargest")
+                
                 if target != None and rd.random() < force_target_input_rate :
                     # print("ctd : " , ctd )
                     word   = self.embedding.itos[target[ctd]]  
