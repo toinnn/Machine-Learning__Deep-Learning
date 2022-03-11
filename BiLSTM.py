@@ -253,12 +253,12 @@ class BiLSTM(nn.Module ):#, override):
                     print("Age atual {} , ctd atual {}\nout.shape = {} , y.shape = {}".format(Age ,ctd ,out.shape , y.shape))
                 loss = lossFunction(out , y.to(self.device))/div
                 lossValue += loss.item()
-                print("Pré backward")
+                # print("Pré backward")
                 loss.backward()
-                print("Pós backward")
+                # print("Pós backward")
                 optimizer.step()
                 optimizer.zero_grad()
-                print("Pós zero-grad")
+                # print("Pós zero-grad")
                 ctd += 1
             if test_Input_Batch != None and test_Target_Batch != None  :
                 diff = 0
