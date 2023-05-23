@@ -189,9 +189,11 @@ class decoder(nn.Module):
             for l in self.layers :
                 buffer = l(buffer , Enc_values , Enc_keys)
             buffer = F.softmax(self.linear_Out(buffer[-1]) , dim = 0 )
+            # out        = torch.argmax(buffer).item()
             out = heapq.nlargest(1, enumerate(buffer ) , key = lambda x : x[1])[0]
             soft_Out.append(buffer.view(1,-1))
             
+            # sequence = torch.cat((sequence , torch.from_numpy(self.embedding[ self.embedding.index2word[ out ] ] ).float().view(1,-1)),dim = 0 )
             # sequence = torch.cat((sequence , self.embedding.vocabulary[self.embedding.idx2token[out[0]]]),dim = 0 )
             sequence = torch.cat((sequence , torch.from_numpy(self.embedding[ self.embedding.index2word[ out[0] ] ] ).float().view(1,-1)),dim = 0 )
 
@@ -206,7 +208,10 @@ class decoder(nn.Module):
             for l in layers :
                 buffer = l(buffer , Enc_values , Enc_keys)
             buffer = F.softmax(self.linear_Out(buffer[-1]) , dim = 0 )
+            #out        = torch.argmax(buffer).item()
             out = heapq.nlargest(1, enumerate(buffer ) , key = lambda y : y[1])[0]
+            
+            # idx.append(out)
             idx.append(out[0])
             #buffer = F.softmax(buffer , dim = 1)
             #buffer = O Vetor com a maior probabilidade , mas qual ??
@@ -225,7 +230,7 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
         self.model_dim = model_dim
         self.Embedding = Embedding
         self.encoder = encoder(model_dim , heads_Enc , num_Enc_layers)
-        self.decoder = decoder(model_dim , heads_Dec , num_Dec_layers , Embedding , EOS_Vector)
+        self.decoder = decoder(model_dim , heads_Dec , num_Dec_layers , Embedding , EOS_Vector , num_class )
         # self.optimizer = torch.optim.Adam(self.parameters(),0.05,(0.9,.999))
 
     
