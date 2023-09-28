@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.nn.utils.prune as prune
 import matplotlib.pyplot as plt
 import random as rd
 from torch.autograd import Variable
@@ -55,7 +56,10 @@ class selfAttention(nn.Module):
         self.output  = nn.Linear(model_dim , model_dim )
         print("chegou aqui")
 
- 
+    def weights(self)->list :
+        weights = [self.output ]
+        weights += [i for i in self.keys] + [i for i in self.queries] + [i for i in self.values] 
+        return weights
     def forward(self,value ,key , query, scale = True , mask = False ) :
         
         # if type(key) != type(torch.tensor([1])) :
@@ -131,6 +135,11 @@ class transformerBlock(nn.Module):# A LAYER_NORM AINDA NÃO ME CONVENCEU
         self.layerNorm1  = nn.LayerNorm(model_dim )
         self.feedForward = nn.Sequential(nn.Linear(model_dim,model_dim * forward_expansion),nn.ELU(),nn.Linear(model_dim * forward_expansion ,model_dim))
 
+    def weights(self)->list:
+        weights = self.attention.weights()
+        weights += [i for i in self.feedForward]
+        return weights
+    
     def forward(self ,value ,key ,query ,scale = True , mask = False):
         attention = self.attention(value ,key ,query , scale = scale , mask = mask)
         x = self.layerNorm0(attention + query)
@@ -141,7 +150,12 @@ class encoder(nn.Module):
     def __init__(self ,model_dim , heads ,num_layers, forward_expansion = 4):
         super(encoder,self).__init__()
         self.blocks = nn.ModuleList([transformerBlock(model_dim , heads , forward_expansion = forward_expansion) for i in range(num_layers)])
-        
+    
+    def weights(self)->list:
+        weights = []
+        for i in self.blocks :
+            weights += i.weights()
+        return weights
     def forward(self,x , mask = False ,scale = True) :
         out = x
         for layer in self.blocks :
@@ -154,6 +168,11 @@ class decoderBlock(nn.Module):
         self.norm = nn.LayerNorm(model_dim)
         self.transformerBlock = transformerBlock(model_dim,heads , forward_expansion = forward_expansion)
 
+    def weights(self)->list:
+        weights = self.attention.weights()
+        
+        weights += self.transformerBlock.weights()
+        return weights
     def forward(self ,x ,values ,keys ,mask = True ,scale = False) :
         attention = self.attention(x,x,x , mask = mask , scale = scale)
         queries = self.norm(attention + x)
@@ -175,6 +194,12 @@ class decoder(nn.Module):
             self.EOS = torch.from_numpy(self.EOS).float()
             self.BOS = -self.EOS
 
+    def weights(self)->list:
+        weights = [self.linear_Out]
+        for i in self.layers :
+            weights += i.weights()
+        return weights
+    
     def forward_fit(self ,Enc_values , Enc_keys , max_lengh  ) :
         sequence = self.BOS
         soft_Out = [] # nn.ModuleList([])
@@ -233,7 +258,12 @@ class Tener(nn.Module):#EOS_Vector == End-Of-Sentence_Vector
         self.decoder = decoder(model_dim , heads_Dec , num_Dec_layers , Embedding , EOS_Vector , num_class )
         # self.optimizer = torch.optim.Adam(self.parameters(),0.05,(0.9,.999))
 
-    
+    def sparsefy(self , amount_ = 0.2)->None:
+        """Pruning the network """
+        parameters = self.encoder.weights() + self.decoder.weights()
+        parameters = [ (i , "weight") for i in parameters ]
+        prune.global_unstructured( parameters , pruning_method=prune.L1Unstructured, amount = amount_)
+        
     def fit(self ,batch_Input , batch_Output , maxAge , maxErro,n = 0.05 ,Betas = (0.9,.999) ,  lossFunction = nn.CrossEntropyLoss() , 
             lossGraphNumber = 1 ):
         self.optimizer = torch.optim.Adam(self.parameters(), n ,Betas)
